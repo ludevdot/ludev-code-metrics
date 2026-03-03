@@ -31,10 +31,17 @@
           "default": "",
           "description": "Manual OAuth token fallback if automatic credential resolution fails"
         },
-        "claudeUsage.showProgressBar": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable ASCII progress bar in the Status Bar"
+        "claudeUsage.barStyle": {
+          "type": "string",
+          "enum": ["gradient", "blocks", "icon-only", "icon+gradient"],
+          "enumDescriptions": [
+            "Gradient bar using ▰▱ characters  — $(clock) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left",
+            "Solid bar using █░ characters     — $(clock) █████░░░░░ Session: 45% · 2h left",
+            "Dynamic icon only, no bar         — $(pass/warning/error) Session: 45% · 2h left",
+            "Dynamic icon with gradient bar    — $(pass) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left"
+          ],
+          "default": "gradient",
+          "description": "Visual style for the status bar items"
         },
         "claudeUsage.warningThreshold": {
           "type": "number",

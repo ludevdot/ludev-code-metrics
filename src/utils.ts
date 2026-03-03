@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+export type BarStyle = 'gradient' | 'blocks' | 'icon-only' | 'icon+gradient';
+
 /**
  * Formats the time remaining until a reset timestamp.
  * Returns an empty string if resetsAt is null or in the past.
@@ -29,12 +31,34 @@ export function formatTimeLeft(resetsAt: string | null): string {
 }
 
 /**
- * Builds an ASCII progress bar of the given length.
- * Example: buildProgressBar(26, 10) => "███░░░░░░░"
+ * Builds a progress bar of the given length.
+ * gradient: ▰▰▰▰▰▱▱▱▱▱
+ * blocks:   █████░░░░░
  */
-export function buildProgressBar(percent: number, length = 10): string {
+export function buildProgressBar(
+  percent: number,
+  length = 10,
+  style: 'gradient' | 'blocks' = 'gradient'
+): string {
   const filled = Math.max(0, Math.min(length, Math.round((percent / 100) * length)));
-  return '█'.repeat(filled) + '░'.repeat(length - filled);
+  if (style === 'blocks') {
+    return '█'.repeat(filled) + '░'.repeat(length - filled);
+  }
+  return '▰'.repeat(filled) + '▱'.repeat(length - filled);
+}
+
+/**
+ * Returns a dynamic codicon based on usage level.
+ * $(pass) → $(warning) → $(error) as utilization rises.
+ */
+export function getDynamicIcon(percent: number, warningThreshold: number): string {
+  if (percent >= 95) {
+    return '$(error)';
+  }
+  if (percent >= warningThreshold) {
+    return '$(warning)';
+  }
+  return '$(pass)';
 }
 
 /**

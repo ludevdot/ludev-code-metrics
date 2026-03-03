@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getAccessToken } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
-import { buildProgressBar, formatTimeLeft, getColorByUsage } from './utils';
+import { BarStyle, buildProgressBar, formatTimeLeft, getColorByUsage, getDynamicIcon } from './utils';
 
 export class UsageStatusBar {
   private readonly sessionItem: vscode.StatusBarItem;
@@ -68,7 +68,7 @@ export class UsageStatusBar {
 
   private updateDisplay(data: UsageLimits, stale: boolean): void {
     const config = vscode.workspace.getConfiguration('claudeUsage');
-    const showBar = config.get<boolean>('showProgressBar', false);
+    const barStyle = config.get<BarStyle>('barStyle', 'gradient');
     const warningThreshold = config.get<number>('warningThreshold', 80);
     const staleMark = stale ? ' ~' : '';
 
@@ -76,8 +76,9 @@ export class UsageStatusBar {
     const sessionPct = Math.round(data.five_hour.utilization);
     const sessionTime = formatTimeLeft(data.five_hour.resets_at);
     const sessionTimeStr = sessionTime ? ` · ${sessionTime}` : '';
-    const sessionBarStr = showBar ? ` ${buildProgressBar(sessionPct)}` : '';
-    this.sessionItem.text = `$(clock)${sessionBarStr} Session: ${sessionPct}%${sessionTimeStr}${staleMark}`;
+    this.sessionItem.text = this.formatText(
+      '$(clock)', sessionPct, 'Session', sessionTimeStr, staleMark, barStyle, warningThreshold
+    );
     this.sessionItem.backgroundColor = getColorByUsage(sessionPct, warningThreshold);
     this.sessionItem.tooltip = this.buildTooltip(
       'Session Usage (5h rolling window)',
@@ -89,14 +90,40 @@ export class UsageStatusBar {
     const weeklyPct = Math.round(data.seven_day.utilization);
     const weeklyTime = formatTimeLeft(data.seven_day.resets_at);
     const weeklyTimeStr = weeklyTime ? ` · ${weeklyTime}` : '';
-    const weeklyBarStr = showBar ? ` ${buildProgressBar(weeklyPct)}` : '';
-    this.weeklyItem.text = `$(calendar)${weeklyBarStr} Weekly: ${weeklyPct}%${weeklyTimeStr}${staleMark}`;
+    this.weeklyItem.text = this.formatText(
+      '$(calendar)', weeklyPct, 'Weekly', weeklyTimeStr, staleMark, barStyle, warningThreshold
+    );
     this.weeklyItem.backgroundColor = getColorByUsage(weeklyPct, warningThreshold);
     this.weeklyItem.tooltip = this.buildTooltip(
       'Weekly Usage (7-day rolling window)',
       weeklyPct,
       data.seven_day.resets_at
     );
+  }
+
+  private formatText(
+    staticIcon: string,
+    pct: number,
+    label: string,
+    timeStr: string,
+    staleMark: string,
+    barStyle: BarStyle,
+    warningThreshold: number
+  ): string {
+    const gradientBar = ` ${buildProgressBar(pct, 10, 'gradient')}`;
+    const blocksBar   = ` ${buildProgressBar(pct, 10, 'blocks')}`;
+    const dynIcon     = getDynamicIcon(pct, warningThreshold);
+
+    switch (barStyle) {
+      case 'gradient':
+        return `${staticIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
+      case 'blocks':
+        return `${staticIcon}${blocksBar} ${label}: ${pct}%${timeStr}${staleMark}`;
+      case 'icon-only':
+        return `${dynIcon} ${label}: ${pct}%${timeStr}${staleMark}`;
+      case 'icon+gradient':
+        return `${dynIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
+    }
   }
 
   private buildTooltip(
