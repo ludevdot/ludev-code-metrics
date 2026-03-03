@@ -26,6 +26,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       if (msg.type === 'refresh') {
         void this.refresh();
       }
+      if (msg.type === 'changeStyle') {
+        void vscode.workspace
+          .getConfiguration('claudeUsage')
+          .update('barStyle', msg.value, vscode.ConfigurationTarget.Global);
+      }
     });
 
     webviewView.onDidChangeVisibility(() => {
@@ -41,6 +46,12 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       vscode.workspace.onDidChangeConfiguration((e) => {
         if (e.affectsConfiguration('claudeUsage.refreshInterval')) {
           this.restartPolling();
+        }
+        if (e.affectsConfiguration('claudeUsage.barStyle')) {
+          const style = vscode.workspace
+            .getConfiguration('claudeUsage')
+            .get<string>('barStyle', 'gradient');
+          this.post({ type: 'styleChanged', value: style });
         }
       })
     );
@@ -95,6 +106,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       { length: 32 },
       () => Math.random().toString(36)[2]
     ).join('');
+    const currentStyle = vscode.workspace
+      .getConfiguration('claudeUsage')
+      .get<string>('barStyle', 'gradient');
 
     return /* html */`<!DOCTYPE html>
 <html lang="en">
@@ -257,6 +271,47 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       text-align: center;
     }
 
+    /* ── Style picker ── */
+    .style-picker {
+      margin-top: 14px;
+      border-top: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
+      padding-top: 12px;
+    }
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 8px;
+    }
+    .style-options { display: flex; flex-direction: column; gap: 2px; }
+    .style-opt {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 7px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.12s;
+      user-select: none;
+    }
+    .style-opt:hover { background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.1)); }
+    .style-opt input[type="radio"] {
+      accent-color: var(--vscode-focusBorder, #007fd4);
+      cursor: pointer;
+      flex-shrink: 0;
+      width: 14px;
+      height: 14px;
+    }
+    .style-opt-label { font-size: 12px; line-height: 1; }
+    .style-opt-preview {
+      font-size: 10px;
+      opacity: 0.45;
+      font-family: monospace;
+      margin-left: auto;
+    }
+
     /* ── Helpers ── */
     .hidden { display: none !important; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -280,9 +335,36 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     <p class="hint">Ensure Claude Code is installed and logged in, or set <code>claudeUsage.manualToken</code> in settings.</p>
   </div>
 
+  <div class="style-picker">
+    <div class="section-label">Status bar style</div>
+    <div class="style-options">
+      <label class="style-opt">
+        <input type="radio" name="barStyle" value="gradient">
+        <span class="style-opt-label">Gradient</span>
+        <span class="style-opt-preview">▰▰▰▰▰▱▱▱▱▱</span>
+      </label>
+      <label class="style-opt">
+        <input type="radio" name="barStyle" value="blocks">
+        <span class="style-opt-label">Blocks</span>
+        <span class="style-opt-preview">█████░░░░░</span>
+      </label>
+      <label class="style-opt">
+        <input type="radio" name="barStyle" value="icon-only">
+        <span class="style-opt-label">Icon only</span>
+        <span class="style-opt-preview">✓ / ⚠ / ✖</span>
+      </label>
+      <label class="style-opt">
+        <input type="radio" name="barStyle" value="icon+gradient">
+        <span class="style-opt-label">Icon + bar</span>
+        <span class="style-opt-preview">✓ ▰▰▰▰▰▱▱▱▱▱</span>
+      </label>
+    </div>
+  </div>
+
   <div class="footer" id="footer"></div>
 
 <script nonce="${nonce}">
+  const INITIAL_STYLE = ${JSON.stringify(currentStyle)};
   const vscode = acquireVsCodeApi();
 
   function doRefresh() {
@@ -340,9 +422,29 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     return m + 'm left';
   }
 
+  // Init radio buttons
+  function setStyleRadio(value) {
+    document.querySelectorAll('input[name="barStyle"]').forEach((el) => {
+      el.checked = el.value === value;
+    });
+  }
+  setStyleRadio(INITIAL_STYLE);
+
+  document.querySelectorAll('input[name="barStyle"]').forEach((el) => {
+    el.addEventListener('change', () => {
+      if (el.checked) {
+        vscode.postMessage({ type: 'changeStyle', value: el.value });
+      }
+    });
+  });
+
   window.addEventListener('message', (event) => {
     const msg = event.data;
     const warn = 80; // mirrored default; could pass from extension
+
+    if (msg.type === 'styleChanged') {
+      setStyleRadio(msg.value);
+    }
 
     if (msg.type === 'update') {
       document.getElementById('cards').classList.remove('hidden');
