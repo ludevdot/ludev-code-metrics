@@ -1,0 +1,21 @@
+# Compiled output
+out/
+
+# Dependencies
+node_modules/
+
+# Packaging
+*.vsix
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# VSCode test runner
+.vscode-test/
+
+# Environment
+.env
