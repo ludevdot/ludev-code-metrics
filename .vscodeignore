@@ -1,6 +1,26 @@
-.vscode/**
+# Source code — not needed in the packaged extension
 src/**
-.gitignore
+vitest.config.*
 tsconfig.json
+
+# Build tooling
+.vscode/**
+.docs_example/**
+esbuild.config.*
+
+# Dev & CI
+.gitignore
+.env
 **/*.map
+
+# Test artifacts
+.vscode-test/
 node_modules/**
+
+# Docs (keep README, CHANGELOG, LICENSE — Marketplace shows them)
+CONTRIBUTING.md
+CLAUDE.md
+claude-usage-vscode-extension.md
+PLAN.md
+.changeset/**
+scripts/**

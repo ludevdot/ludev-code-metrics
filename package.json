@@ -4,11 +4,33 @@
   "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
   "version": "0.0.1",
   "publisher": "claude-usage",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_GITHUB_USERNAME/claude-usage-indicator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_GITHUB_USERNAME/claude-usage-indicator/issues"
+  },
+  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/claude-usage-indicator#readme",
+  "keywords": [
+    "claude",
+    "anthropic",
+    "claude code",
+    "usage",
+    "status bar",
+    "ai"
+  ],
+  "icon": "media/marketplace-icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -51,7 +73,12 @@
         },
         "claudeUsage.barStyle": {
           "type": "string",
-          "enum": ["gradient", "blocks", "icon-only", "icon+gradient"],
+          "enum": [
+            "gradient",
+            "blocks",
+            "icon-only",
+            "icon+gradient"
+          ],
           "enumDescriptions": [
             "Gradient bar using ▰▱ characters  — $(clock) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left",
             "Solid bar using █░ characters     — $(clock) █████░░░░░ Session: 45% · 2h left",
@@ -71,14 +98,36 @@
       }
     }
   },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm run precommit-version"
+  },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "vscode:prepublish": "pnpm run compile"
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "vscode:prepublish": "pnpm run typecheck && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "precommit-version": "node scripts/precommit-version.mjs",
+    "postinstall": "simple-git-hooks"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.3.0"
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.3",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^5.3.0",
+    "vitest": "^2.1.9"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "simple-git-hooks",
+      "esbuild"
+    ]
   }
 }
