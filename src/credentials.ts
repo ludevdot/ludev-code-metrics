@@ -15,23 +15,34 @@ interface ClaudeCredentials {
 }
 
 /**
- * Attempts to read the Claude Code OAuth access token from the OS.
+ * Attempts to read the Claude Code OAuth access token.
  * Resolution order:
- *   1. macOS Keychain (security find-generic-password)
+ *   1. ~/.claude/.credentials.json (written by Claude Code CLI, all platforms)
  *   2. Linux secret-tool
- *   3. Linux/Windows filesystem fallback
+ *   3. Windows %APPDATA%\claude\credentials.json
  *   4. Manual token from VSCode setting claudeUsage.manualToken
  *
  * Returns the access token string, or null if none found.
  * IMPORTANT: The token value is never logged or persisted.
  */
 export function getAccessToken(): string | null {
-  const platform = process.platform;
+  // 1. Claude Code CLI credentials file — reliable on all platforms
+  const claudeCredPaths = [
+    path.join(os.homedir(), '.claude', '.credentials.json'),
+    path.join(os.homedir(), '.claude', 'credentials.json'),
+  ];
+  for (const filePath of claudeCredPaths) {
+    const token = readTokenFromFile(filePath);
+    if (token) {
+      return token;
+    }
+  }
 
-  if (platform === 'darwin') {
+  // 2. Linux: secret-tool
+  if (process.platform === 'linux') {
     try {
       const raw = child_process.execSync(
-        'security find-generic-password -s "Claude Code-credentials" -w',
+        'secret-tool lookup service "Claude Code-credentials"',
         { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
       ).trim();
       const parsed = JSON.parse(raw) as ClaudeCredentials;
@@ -43,33 +54,8 @@ export function getAccessToken(): string | null {
     }
   }
 
-  if (platform === 'linux') {
-    try {
-      const raw = child_process.execSync(
-        'secret-tool lookup service "Claude Code-credentials"',
-        { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-      ).trim();
-      const parsed = JSON.parse(raw) as ClaudeCredentials;
-      if (parsed.claudeAiOauth.accessToken) {
-        return parsed.claudeAiOauth.accessToken;
-      }
-    } catch {
-      // fall through to file
-    }
-
-    const linuxPaths = [
-      path.join(os.homedir(), '.claude', 'credentials.json'),
-      path.join(os.homedir(), '.config', 'claude', 'credentials.json'),
-    ];
-    for (const filePath of linuxPaths) {
-      const token = readTokenFromFile(filePath);
-      if (token) {
-        return token;
-      }
-    }
-  }
-
-  if (platform === 'win32') {
+  // 3. Windows: %APPDATA%\claude\credentials.json
+  if (process.platform === 'win32') {
     const appData = process.env['APPDATA'] ?? '';
     const token = readTokenFromFile(path.join(appData, 'claude', 'credentials.json'));
     if (token) {
@@ -77,7 +63,7 @@ export function getAccessToken(): string | null {
     }
   }
 
-  // Fallback: manual token from settings
+  // 4. Manual token from settings
   const manualToken = vscode.workspace
     .getConfiguration('claudeUsage')
     .get<string>('manualToken', '')
