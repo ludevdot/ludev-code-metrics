@@ -1,0 +1,151 @@
+import * as vscode from 'vscode';
+import { getAccessToken } from './credentials';
+import { fetchUsage, UsageLimits } from './usageApi';
+import { buildProgressBar, formatTimeLeft, getColorByUsage } from './utils';
+
+export class UsageStatusBar {
+  private readonly sessionItem: vscode.StatusBarItem;
+  private readonly weeklyItem: vscode.StatusBarItem;
+  private pollingInterval: ReturnType<typeof setInterval> | undefined;
+  private lastValidData: UsageLimits | null = null;
+  private readonly disposables: vscode.Disposable[] = [];
+
+  constructor(context: vscode.ExtensionContext) {
+    this.sessionItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      100
+    );
+    this.sessionItem.command = 'claudeUsage.refresh';
+
+    this.weeklyItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      99
+    );
+    this.weeklyItem.command = 'claudeUsage.refresh';
+
+    this.sessionItem.show();
+    this.weeklyItem.show();
+
+    this.disposables.push(
+      vscode.commands.registerCommand('claudeUsage.refresh', () => {
+        void this.refresh();
+      }),
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration('claudeUsage')) {
+          this.restartPolling();
+        }
+      })
+    );
+
+    context.subscriptions.push(...this.disposables);
+  }
+
+  async start(): Promise<void> {
+    await this.refresh();
+    this.startPolling();
+  }
+
+  async refresh(): Promise<void> {
+    const token = getAccessToken();
+    if (!token) {
+      this.showNoAuth();
+      return;
+    }
+
+    try {
+      const data = await fetchUsage(token);
+      this.lastValidData = data;
+      this.weeklyItem.show();
+      this.updateDisplay(data, false);
+    } catch {
+      if (this.lastValidData) {
+        this.updateDisplay(this.lastValidData, true);
+      } else {
+        this.showNoAuth();
+      }
+    }
+  }
+
+  private updateDisplay(data: UsageLimits, stale: boolean): void {
+    const config = vscode.workspace.getConfiguration('claudeUsage');
+    const showBar = config.get<boolean>('showProgressBar', false);
+    const warningThreshold = config.get<number>('warningThreshold', 80);
+    const staleMark = stale ? ' ~' : '';
+
+    // Session item
+    const sessionPct = Math.round(data.five_hour.utilization);
+    const sessionTime = formatTimeLeft(data.five_hour.resets_at);
+    const sessionTimeStr = sessionTime ? ` · ${sessionTime}` : '';
+    const sessionBarStr = showBar ? ` ${buildProgressBar(sessionPct)}` : '';
+    this.sessionItem.text = `$(clock)${sessionBarStr} Session: ${sessionPct}%${sessionTimeStr}${staleMark}`;
+    this.sessionItem.backgroundColor = getColorByUsage(sessionPct, warningThreshold);
+    this.sessionItem.tooltip = this.buildTooltip(
+      'Session Usage (5h rolling window)',
+      sessionPct,
+      data.five_hour.resets_at
+    );
+
+    // Weekly item
+    const weeklyPct = Math.round(data.seven_day.utilization);
+    const weeklyTime = formatTimeLeft(data.seven_day.resets_at);
+    const weeklyTimeStr = weeklyTime ? ` · ${weeklyTime}` : '';
+    const weeklyBarStr = showBar ? ` ${buildProgressBar(weeklyPct)}` : '';
+    this.weeklyItem.text = `$(calendar)${weeklyBarStr} Weekly: ${weeklyPct}%${weeklyTimeStr}${staleMark}`;
+    this.weeklyItem.backgroundColor = getColorByUsage(weeklyPct, warningThreshold);
+    this.weeklyItem.tooltip = this.buildTooltip(
+      'Weekly Usage (7-day rolling window)',
+      weeklyPct,
+      data.seven_day.resets_at
+    );
+  }
+
+  private buildTooltip(
+    label: string,
+    percent: number,
+    resetsAt: string | null
+  ): vscode.MarkdownString {
+    const resetLine = resetsAt
+      ? `Resets at: ${new Date(resetsAt).toLocaleString()}`
+      : 'No reset time available';
+    const md = new vscode.MarkdownString(
+      `**Claude Code — ${label}**\n\nUtilization: ${percent}%\n\n${resetLine}\n\n_Click to refresh_`
+    );
+    md.isTrusted = true;
+    return md;
+  }
+
+  private showNoAuth(): void {
+    const errorBg = new vscode.ThemeColor('statusBarItem.errorBackground');
+    this.sessionItem.text = '$(error) Claude: No auth';
+    this.sessionItem.backgroundColor = errorBg;
+    this.sessionItem.tooltip =
+      'Claude Code credentials not found.\nSet claudeUsage.manualToken in settings, or ensure Claude Code is installed and logged in.';
+    this.weeklyItem.hide();
+  }
+
+  private startPolling(): void {
+    const config = vscode.workspace.getConfiguration('claudeUsage');
+    const intervalSec = Math.max(30, config.get<number>('refreshInterval', 60));
+    this.pollingInterval = setInterval(() => { void this.refresh(); }, intervalSec * 1000);
+  }
+
+  private restartPolling(): void {
+    if (this.pollingInterval !== undefined) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
+    }
+    this.startPolling();
+    void this.refresh();
+  }
+
+  dispose(): void {
+    if (this.pollingInterval !== undefined) {
+      clearInterval(this.pollingInterval);
+    }
+    this.sessionItem.dispose();
+    this.weeklyItem.dispose();
+    for (const d of this.disposables) {
+      d.dispose();
+    }
+  }
+}

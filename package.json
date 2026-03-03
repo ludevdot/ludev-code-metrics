@@ -1,0 +1,59 @@
+{
+  "name": "claude-usage-indicator",
+  "displayName": "Claude Code Usage",
+  "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
+  "version": "0.0.1",
+  "publisher": "claude-usage",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeUsage.refresh",
+        "title": "Claude Usage: Refresh Now"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Code Usage",
+      "properties": {
+        "claudeUsage.refreshInterval": {
+          "type": "number",
+          "default": 60,
+          "minimum": 30,
+          "description": "Poll interval in seconds (minimum 30)"
+        },
+        "claudeUsage.manualToken": {
+          "type": "string",
+          "default": "",
+          "description": "Manual OAuth token fallback if automatic credential resolution fails"
+        },
+        "claudeUsage.showProgressBar": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable ASCII progress bar in the Status Bar"
+        },
+        "claudeUsage.warningThreshold": {
+          "type": "number",
+          "default": 80,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Usage percentage at which the warning color activates"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "pnpm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
