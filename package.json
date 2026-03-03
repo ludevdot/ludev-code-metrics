@@ -11,6 +11,24 @@
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claudeUsageSidebar",
+          "title": "Claude Code Usage",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "claudeUsageSidebar": [
+        {
+          "type": "webview",
+          "id": "claudeUsage.sidebar",
+          "name": "Usage"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "claudeUsage.refresh",
