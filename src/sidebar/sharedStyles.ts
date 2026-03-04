@@ -172,6 +172,20 @@ export function getSharedStyles(): string {
       outline: 1px solid var(--vscode-focusBorder, #007fd4);
       outline-offset: -1px;
     }
+    .account-add-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--vscode-dropdown-border, rgba(128,128,128,0.3));
+      border-radius: 4px;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      padding: 1px 6px 2px;
+      opacity: 0.6;
+      transition: opacity 0.12s, background 0.12s;
+    }
+    .account-add-btn:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.1)); }
 
     /* ── Helpers ── */
     .hidden { display: none !important; }

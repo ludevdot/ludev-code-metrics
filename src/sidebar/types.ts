@@ -50,4 +50,5 @@ export interface SidebarI18n {
   opusLabel: string;
   accountLabel: string;
   accountDefault: string;
+  accountAdd: string;
 }

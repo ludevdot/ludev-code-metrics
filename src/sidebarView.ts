@@ -134,6 +134,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           // onRefresh is already called inside refresh() on success
         })();
       }
+      if (msg.type === 'addAccount') {
+        void this.runAddAccountFlow();
+      }
     });
 
     webviewView.onDidChangeVisibility(() => {
@@ -236,6 +239,79 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private async runAddAccountFlow(): Promise<void> {
+    // 1. Label
+    const label = await vscode.window.showInputBox({
+      title: vscode.l10n.t('Add account — step 1/2'),
+      prompt: vscode.l10n.t('Enter a name for this account (e.g. "Work", "Personal")'),
+      placeHolder: vscode.l10n.t('Account name'),
+      ignoreFocusOut: true,
+      validateInput: (v) => {
+        if (!v.trim()) { return vscode.l10n.t('Name cannot be empty'); }
+        if (v.trim() === DEFAULT_ACCOUNT_LABEL) { return vscode.l10n.t('That name is reserved'); }
+        const existing = getConfiguredAccounts();
+        if (existing.find(a => a.label === v.trim())) {
+          return vscode.l10n.t('An account with that name already exists');
+        }
+        return null;
+      },
+    });
+    if (!label) { return; }
+
+    // 2. Credential type
+    const kind = await vscode.window.showQuickPick(
+      [
+        {
+          label: vscode.l10n.t('$(file) Credentials file'),
+          description: vscode.l10n.t('Full .credentials.json — shows plan type'),
+          value: 'file' as const,
+        },
+        {
+          label: vscode.l10n.t('$(key) Token'),
+          description: vscode.l10n.t('Raw OAuth token — usage data only'),
+          value: 'token' as const,
+        },
+      ],
+      {
+        title: vscode.l10n.t('Add account — step 2/2'),
+        placeHolder: vscode.l10n.t('How do you want to authenticate this account?'),
+        ignoreFocusOut: true,
+      }
+    );
+    if (!kind) { return; }
+
+    let newEntry: { label: string; token?: string; credentialsPath?: string };
+
+    if (kind.value === 'file') {
+      const uris = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        openLabel: vscode.l10n.t('Select credentials file'),
+        filters: { 'JSON': ['json'] },
+      });
+      if (!uris?.[0]) { return; }
+      newEntry = { label: label.trim(), credentialsPath: uris[0].fsPath };
+    } else {
+      const token = await vscode.window.showInputBox({
+        title: vscode.l10n.t('Add account — enter token'),
+        prompt: vscode.l10n.t('Paste your Claude Code OAuth token'),
+        placeHolder: vscode.l10n.t('sk-ant-...'),
+        password: true,
+        ignoreFocusOut: true,
+        validateInput: (v) => v.trim() ? null : vscode.l10n.t('Token cannot be empty'),
+      });
+      if (!token) { return; }
+      newEntry = { label: label.trim(), token: token.trim() };
+    }
+
+    // Append to settings and switch to the new account
+    const existing = getConfiguredAccounts();
+    await vscode.workspace
+      .getConfiguration('claudeUsage')
+      .update('accounts', [...existing, newEntry], vscode.ConfigurationTarget.Global);
+    await setActiveAccount(this.context, newEntry.label);
+    await this.refresh();
+  }
+
   dispose(): void {}
 
   private escapeHtml(str: string): string {
@@ -316,6 +392,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       opusLabel:        vscode.l10n.t('Opus (7d)'),
       accountLabel:     vscode.l10n.t('Account'),
       accountDefault:   vscode.l10n.t('Default'),
+      accountAdd:       vscode.l10n.t('Add account'),
     };
 
     // Build account selector options
@@ -354,6 +431,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     <select class="account-select" id="accountSelect">
       ${accountOptionsHtml}
     </select>
+    <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountAdd}">+</button>
   </div>
 
   <div class="tab-bar">
@@ -411,6 +489,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   // ── Account selector ──
   document.getElementById('accountSelect').addEventListener('change', function () {
     vscode.postMessage({ type: 'switchAccount', label: this.value });
+  });
+  document.getElementById('addAccountBtn').addEventListener('click', function () {
+    vscode.postMessage({ type: 'addAccount' });
   });
 
   ${getUsageTabScript()}
