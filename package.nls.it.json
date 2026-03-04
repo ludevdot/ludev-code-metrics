@@ -1,0 +1,18 @@
+{
+  "command.refresh.title": "Claude Usage: Aggiorna ora",
+  "command.setToken.title": "Claude Usage: Inserisci token manualmente",
+  "command.setCredentialsPath.title": "Claude Usage: Imposta percorso file credenziali",
+  "config.credentialsPath.description": "Percorso di un file JSON di credenziali Claude Code personalizzato (es. ~/.claude/.credentials.json). Fornisce le credenziali complete incluso il tipo di piano. Ha priorità sul token manuale.",
+  "config.title": "Utilizzo Claude Code",
+  "view.container.title": "Utilizzo Claude Code",
+  "view.usage.name": "Utilizzo",
+  "config.refreshInterval.description": "Intervallo di polling in secondi (minimo 30)",
+  "config.manualToken.description": "Token OAuth manuale di riserva se la risoluzione automatica delle credenziali fallisce",
+  "config.barStyle.description": "Stile visivo degli elementi della barra di stato",
+  "config.barStyle.gradient": "Barra sfumata con caratteri ▰▱  — $(clock) ▰▰▰▰▰▱▱▱▱▱ Sessione: 45% · 2h rimanenti",
+  "config.barStyle.blocks": "Barra solida con caratteri █░     — $(clock) █████░░░░░ Sessione: 45% · 2h rimanenti",
+  "config.barStyle.iconOnly": "Solo icona dinamica, nessuna barra — $(pass/warning/error) Sessione: 45% · 2h rimanenti",
+  "config.barStyle.iconGradient": "Icona dinamica con barra sfumata  — $(pass) ▰▰▰▰▰▱▱▱▱▱ Sessione: 45% · 2h rimanenti",
+  "config.warningThreshold.description": "Percentuale di utilizzo oltre la quale si attiva il colore di avviso",
+  "config.viewMode.description": "Modalità vista del pannello: 'extended' mostra le schede Sessione e Settimanale, 'compact' mostra solo la panoramica"
+}

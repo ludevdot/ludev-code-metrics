@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { UsageStatusBar } from './statusBar';
 import { UsageSidebarProvider } from './sidebarView';
+import { getAccessToken } from './credentials';
 
 let statusBar: UsageStatusBar | undefined;
 let sidebarProvider: UsageSidebarProvider | undefined;
@@ -16,6 +17,19 @@ export function activate(context: vscode.ExtensionContext): void {
       sidebarProvider
     )
   );
+
+  if (!getAccessToken()) {
+    const enterBtn = vscode.l10n.t('Enter token manually');
+    void vscode.window.showWarningMessage(
+      vscode.l10n.t('Claude Code credentials not found. Set a token to see your usage data.'),
+      enterBtn,
+      vscode.l10n.t('Skip for now')
+    ).then(selection => {
+      if (selection === enterBtn) {
+        void vscode.commands.executeCommand('claudeUsage.setToken');
+      }
+    });
+  }
 }
 
 export function deactivate(): void {

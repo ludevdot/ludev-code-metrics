@@ -30,6 +30,33 @@ export class UsageStatusBar {
       vscode.commands.registerCommand('claudeUsage.refresh', () => {
         void this.refresh();
       }),
+      vscode.commands.registerCommand('claudeUsage.setCredentialsPath', async () => {
+        const uris = await vscode.window.showOpenDialog({
+          canSelectMany: false,
+          openLabel: vscode.l10n.t('Select credentials file'),
+          filters: { 'JSON': ['json'] },
+        });
+        if (uris?.[0]) {
+          await vscode.workspace
+            .getConfiguration('claudeUsage')
+            .update('credentialsPath', uris[0].fsPath, vscode.ConfigurationTarget.Global);
+          void this.refresh();
+        }
+      }),
+      vscode.commands.registerCommand('claudeUsage.setToken', async () => {
+        const token = await vscode.window.showInputBox({
+          prompt: vscode.l10n.t('Enter your Claude Code OAuth token'),
+          placeHolder: vscode.l10n.t('Paste your token here...'),
+          password: true,
+          ignoreFocusOut: true,
+        });
+        if (token !== undefined) {
+          await vscode.workspace
+            .getConfiguration('claudeUsage')
+            .update('manualToken', token.trim(), vscode.ConfigurationTarget.Global);
+          void this.refresh();
+        }
+      }),
       vscode.workspace.onDidChangeConfiguration((e) => {
         if (e.affectsConfiguration('claudeUsage')) {
           this.restartPolling();
@@ -77,11 +104,11 @@ export class UsageStatusBar {
     const sessionTime = formatTimeLeft(data.five_hour.resets_at);
     const sessionTimeStr = sessionTime ? ` · ${sessionTime}` : '';
     this.sessionItem.text = this.formatText(
-      '$(clock)', sessionPct, 'Session', sessionTimeStr, staleMark, barStyle, warningThreshold
+      '$(clock)', sessionPct, vscode.l10n.t('Session'), sessionTimeStr, staleMark, barStyle, warningThreshold
     );
     this.sessionItem.backgroundColor = getColorByUsage(sessionPct, warningThreshold);
     this.sessionItem.tooltip = this.buildTooltip(
-      'Session Usage (5h rolling window)',
+      vscode.l10n.t('Session Usage (5h rolling window)'),
       sessionPct,
       data.five_hour.resets_at
     );
@@ -91,11 +118,11 @@ export class UsageStatusBar {
     const weeklyTime = formatTimeLeft(data.seven_day.resets_at);
     const weeklyTimeStr = weeklyTime ? ` · ${weeklyTime}` : '';
     this.weeklyItem.text = this.formatText(
-      '$(calendar)', weeklyPct, 'Weekly', weeklyTimeStr, staleMark, barStyle, warningThreshold
+      '$(calendar)', weeklyPct, vscode.l10n.t('Weekly'), weeklyTimeStr, staleMark, barStyle, warningThreshold
     );
     this.weeklyItem.backgroundColor = getColorByUsage(weeklyPct, warningThreshold);
     this.weeklyItem.tooltip = this.buildTooltip(
-      'Weekly Usage (7-day rolling window)',
+      vscode.l10n.t('Weekly Usage (7-day rolling window)'),
       weeklyPct,
       data.seven_day.resets_at
     );
@@ -132,10 +159,10 @@ export class UsageStatusBar {
     resetsAt: string | null
   ): vscode.MarkdownString {
     const resetLine = resetsAt
-      ? `Resets at: ${new Date(resetsAt).toLocaleString()}`
-      : 'No reset time available';
+      ? vscode.l10n.t('Resets at: {0}', new Date(resetsAt).toLocaleString())
+      : vscode.l10n.t('No reset time available');
     const md = new vscode.MarkdownString(
-      `**Claude Code — ${label}**\n\nUtilization: ${percent}%\n\n${resetLine}\n\n_Click to refresh_`
+      `**Claude Code — ${label}**\n\n${vscode.l10n.t('Utilization: {0}%', percent)}\n\n${resetLine}\n\n_${vscode.l10n.t('Click to refresh')}_`
     );
     md.isTrusted = true;
     return md;
@@ -143,10 +170,11 @@ export class UsageStatusBar {
 
   private showNoAuth(): void {
     const errorBg = new vscode.ThemeColor('statusBarItem.errorBackground');
-    this.sessionItem.text = '$(error) Claude: No auth';
+    this.sessionItem.text = `$(error) Claude: ${vscode.l10n.t('No auth')}`;
     this.sessionItem.backgroundColor = errorBg;
-    this.sessionItem.tooltip =
-      'Claude Code credentials not found.\nSet claudeUsage.manualToken in settings, or ensure Claude Code is installed and logged in.';
+    this.sessionItem.tooltip = vscode.l10n.t(
+      'Claude Code credentials not found.\nSet claudeUsage.manualToken in settings, or ensure Claude Code is installed and logged in.'
+    );
     this.weeklyItem.hide();
   }
 

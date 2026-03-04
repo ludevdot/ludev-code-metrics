@@ -1,9 +1,16 @@
 import * as https from 'https';
 
+export interface UsageWindow {
+  utilization: number;
+  resets_at: string | null;
+}
+
 export interface UsageLimits {
-  five_hour:      { utilization: number; resets_at: string | null };
-  seven_day:      { utilization: number; resets_at: string | null };
-  seven_day_opus: { utilization: number; resets_at: string | null };
+  five_hour:            UsageWindow;
+  seven_day:            UsageWindow;
+  seven_day_opus:       UsageWindow | null;
+  seven_day_oauth_apps?: UsageWindow | null;
+  iguana_necktie?:      unknown;
 }
 
 const API_URL = 'https://api.anthropic.com/api/oauth/usage';

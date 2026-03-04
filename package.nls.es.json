@@ -1,0 +1,18 @@
+{
+  "command.refresh.title": "Claude Usage: Actualizar ahora",
+  "command.setToken.title": "Claude Usage: Introducir token manualmente",
+  "command.setCredentialsPath.title": "Claude Usage: Establecer ruta del archivo de credenciales",
+  "config.credentialsPath.description": "Ruta a un archivo JSON de credenciales de Claude Code (p. ej. ~/.claude/.credentials.json). Proporciona las credenciales completas incluyendo el tipo de plan. Tiene prioridad sobre el token manual.",
+  "config.title": "Uso de Claude Code",
+  "view.container.title": "Uso de Claude Code",
+  "view.usage.name": "Uso",
+  "config.refreshInterval.description": "Intervalo de sondeo en segundos (mínimo 30)",
+  "config.manualToken.description": "Token OAuth manual de reserva si la resolución automática de credenciales falla",
+  "config.barStyle.description": "Estilo visual de los elementos de la barra de estado",
+  "config.barStyle.gradient": "Barra degradada con caracteres ▰▱  — $(clock) ▰▰▰▰▰▱▱▱▱▱ Sesión: 45% · 2h restantes",
+  "config.barStyle.blocks": "Barra sólida con caracteres █░     — $(clock) █████░░░░░ Sesión: 45% · 2h restantes",
+  "config.barStyle.iconOnly": "Solo icono dinámico, sin barra     — $(pass/warning/error) Sesión: 45% · 2h restantes",
+  "config.barStyle.iconGradient": "Icono dinámico con barra degradada — $(pass) ▰▰▰▰▰▱▱▱▱▱ Sesión: 45% · 2h restantes",
+  "config.warningThreshold.description": "Porcentaje de uso a partir del cual se activa el color de advertencia",
+  "config.viewMode.description": "Modo de vista del panel: 'extended' muestra las tarjetas Sesión y Semanal, 'compact' muestra solo el resumen"
+}

@@ -32,13 +32,14 @@
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
+  "l10n": "./l10n",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
           "id": "claudeUsageSidebar",
-          "title": "Claude Code Usage",
-          "icon": "media/icon.svg"
+          "title": "%view.container.title%",
+          "icon": "media/test.svg"
         }
       ]
     },
@@ -47,29 +48,37 @@
         {
           "type": "webview",
           "id": "claudeUsage.sidebar",
-          "name": "Usage"
+          "name": "%view.usage.name%"
         }
       ]
     },
     "commands": [
       {
         "command": "claudeUsage.refresh",
-        "title": "Claude Usage: Refresh Now"
+        "title": "%command.refresh.title%"
+      },
+      {
+        "command": "claudeUsage.setToken",
+        "title": "%command.setToken.title%"
+      },
+      {
+        "command": "claudeUsage.setCredentialsPath",
+        "title": "%command.setCredentialsPath.title%"
       }
     ],
     "configuration": {
-      "title": "Claude Code Usage",
+      "title": "%config.title%",
       "properties": {
         "claudeUsage.refreshInterval": {
           "type": "number",
           "default": 60,
           "minimum": 30,
-          "description": "Poll interval in seconds (minimum 30)"
+          "description": "%config.refreshInterval.description%"
         },
         "claudeUsage.manualToken": {
           "type": "string",
           "default": "",
-          "description": "Manual OAuth token fallback if automatic credential resolution fails"
+          "description": "%config.manualToken.description%"
         },
         "claudeUsage.barStyle": {
           "type": "string",
@@ -80,20 +89,31 @@
             "icon+gradient"
           ],
           "enumDescriptions": [
-            "Gradient bar using ▰▱ characters  — $(clock) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left",
-            "Solid bar using █░ characters     — $(clock) █████░░░░░ Session: 45% · 2h left",
-            "Dynamic icon only, no bar         — $(pass/warning/error) Session: 45% · 2h left",
-            "Dynamic icon with gradient bar    — $(pass) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left"
+            "%config.barStyle.gradient%",
+            "%config.barStyle.blocks%",
+            "%config.barStyle.iconOnly%",
+            "%config.barStyle.iconGradient%"
           ],
           "default": "gradient",
-          "description": "Visual style for the status bar items"
+          "description": "%config.barStyle.description%"
+        },
+        "claudeUsage.credentialsPath": {
+          "type": "string",
+          "default": "",
+          "description": "%config.credentialsPath.description%"
         },
         "claudeUsage.warningThreshold": {
           "type": "number",
           "default": 80,
           "minimum": 0,
           "maximum": 100,
-          "description": "Usage percentage at which the warning color activates"
+          "description": "%config.warningThreshold.description%"
+        },
+        "claudeUsage.viewMode": {
+          "type": "string",
+          "enum": ["extended", "compact"],
+          "default": "extended",
+          "description": "%config.viewMode.description%"
         }
       }
     }

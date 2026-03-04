@@ -1,0 +1,18 @@
+{
+  "command.refresh.title": "Claude Usage: Refresh Now",
+  "command.setToken.title": "Claude Usage: Enter Token Manually",
+  "command.setCredentialsPath.title": "Claude Usage: Set Credentials File Path",
+  "config.credentialsPath.description": "Path to a custom Claude Code credentials JSON file (e.g. ~/.claude/.credentials.json). Provides full credentials including plan type. Takes priority over the manual token.",
+  "config.title": "Claude Code Usage",
+  "view.container.title": "Claude Code Usage",
+  "view.usage.name": "Usage",
+  "config.refreshInterval.description": "Poll interval in seconds (minimum 30)",
+  "config.manualToken.description": "Manual OAuth token fallback if automatic credential resolution fails",
+  "config.barStyle.description": "Visual style for the status bar items",
+  "config.barStyle.gradient": "Gradient bar using ▰▱ characters  — $(clock) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left",
+  "config.barStyle.blocks": "Solid bar using █░ characters     — $(clock) █████░░░░░ Session: 45% · 2h left",
+  "config.barStyle.iconOnly": "Dynamic icon only, no bar         — $(pass/warning/error) Session: 45% · 2h left",
+  "config.barStyle.iconGradient": "Dynamic icon with gradient bar    — $(pass) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left",
+  "config.warningThreshold.description": "Usage percentage at which the warning color activates",
+  "config.viewMode.description": "Sidebar view mode: 'extended' shows Session & Weekly cards, 'compact' shows Overview only"
+}

@@ -22,12 +22,12 @@ export function formatTimeLeft(resetsAt: string | null): string {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffDays >= 1) {
-    return `${diffDays}d left`;
+    return vscode.l10n.t('{0}d left', diffDays);
   }
   if (diffHours >= 1) {
-    return `${diffHours}h left`;
+    return vscode.l10n.t('{0}h left', diffHours);
   }
-  return `${diffMinutes}m left`;
+  return vscode.l10n.t('{0}m left', diffMinutes);
 }
 
 /**
