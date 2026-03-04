@@ -34,6 +34,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     _token: vscode.CancellationToken
   ): void {
     this.view = webviewView;
+    webviewView.badge = undefined;
 
     webviewView.webview.options = { enableScripts: true };
     webviewView.webview.html = this.getHtml(webviewView.webview);
@@ -212,7 +213,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     const token = getAccessTokenForAccount(account);
     if (!token) {
       this.post({ type: 'noAuth' });
-      this.setBadge(true);
       return;
     }
     const subType = getSubscriptionTypeForAccount(account);
@@ -224,21 +224,14 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       addSnapshot(this.context, Math.round(data.five_hour.utilization), Math.round(data.seven_day.utilization));
       const history = getHistory(this.context);
       this.post({ type: 'update', data, stale: false, history });
-      this.setBadge(false);
       this.onRefresh?.();
     } catch {
       if (this.lastData) {
         this.post({ type: 'update', data: this.lastData, stale: true });
       } else {
         this.post({ type: 'noAuth' });
-        this.setBadge(true);
       }
     }
-  }
-
-  private setBadge(_active: boolean): void {
-    if (!this.view) { return; }
-    this.view.badge = undefined;
   }
 
   private post(msg: unknown): void {
