@@ -4,7 +4,7 @@ import { fetchUsage, UsageLimits } from './usageApi';
 import { formatTimeLeft } from './utils';
 import * as fs from 'fs';
 import * as path from 'path';
-import { searchSkills, loadCache, saveCache, installSkill, SkillResult } from './skillsManager';
+import { searchSkills, loadCache, saveCache, installSkill, fetchSkillMd, SkillResult } from './skillsManager';
 
 export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'claudeUsage.sidebar';
@@ -70,10 +70,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         void (async () => {
           const skill = msg.skill as SkillResult;
           const [owner, repo] = skill.source.split('/');
-          const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${skill.skillId}/SKILL.md`;
           try {
-            const res = await fetch(rawUrl);
-            const content = res.ok ? await res.text() : '(preview unavailable)';
+            const content = await fetchSkillMd(owner, repo, skill.skillId);
             this.post({ type: 'skillPreview', skill, content });
           } catch {
             this.post({ type: 'skillPreview', skill, content: '(preview unavailable)' });

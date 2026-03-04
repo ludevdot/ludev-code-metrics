@@ -96,9 +96,7 @@ export async function installSkill(
   }
 
   const [owner, repo] = skill.source.split('/');
-  const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${skill.skillId}/SKILL.md`;
-
-  const content = await fetchText(rawUrl);
+  const content = await fetchSkillMd(owner, repo, skill.skillId);
 
   // Write SKILL.md
   const skillDir = path.join(workspaceRoot, '.claude', 'skills', skill.skillId);
@@ -124,6 +122,26 @@ export async function installSkill(
   if (!cached.find(s => s.skillId === skill.skillId)) {
     saveCache(context, [...cached, skill]);
   }
+}
+
+// Candidate paths in order of prevalence across public skill repos
+const SKILL_PATH_CANDIDATES = [
+  (skillId: string) => `skills/${skillId}/SKILL.md`,
+  (skillId: string) => `${skillId}/SKILL.md`,
+  (skillId: string) => `skills/${skillId}.md`,
+  (skillId: string) => `${skillId}.md`,
+];
+
+export async function fetchSkillMd(owner: string, repo: string, skillId: string): Promise<string> {
+  for (const candidate of SKILL_PATH_CANDIDATES) {
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/main/${candidate(skillId)}`;
+    try {
+      return await fetchText(url);
+    } catch {
+      // try next candidate
+    }
+  }
+  throw new Error(`SKILL.md not found for ${owner}/${repo}/${skillId}`);
 }
 
 function fetchText(url: string): Promise<string> {
