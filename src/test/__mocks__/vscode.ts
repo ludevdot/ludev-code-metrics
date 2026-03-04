@@ -16,12 +16,15 @@ export class MarkdownString {
 export const StatusBarAlignment = { Left: 1, Right: 2 } as const;
 
 // Configurable config mock — reset per test with vi.clearAllMocks()
+export const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 } as const;
+
 export const workspace = {
   getConfiguration: vi.fn().mockReturnValue({
     get: vi.fn().mockReturnValue(''),
     update: vi.fn(),
   }),
   onDidChangeConfiguration: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  workspaceFolders: undefined as undefined | { uri: { fsPath: string } }[],
 };
 
 export const window = {
@@ -34,8 +37,21 @@ export const window = {
     backgroundColor: undefined,
     command: '',
   }),
+  showInputBox: vi.fn(),
+  showInformationMessage: vi.fn(),
+  showWarningMessage: vi.fn(),
+  showErrorMessage: vi.fn(),
+  showQuickPick: vi.fn(),
+  showOpenDialog: vi.fn(),
+  createTerminal: vi.fn().mockReturnValue({ show: vi.fn(), dispose: vi.fn() }),
+  onDidCloseTerminal: vi.fn().mockReturnValue({ dispose: vi.fn() }),
 };
 
 export const commands = {
   registerCommand: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+};
+
+export const l10n = {
+  t: (str: string, ...args: unknown[]): string =>
+    str.replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)] ?? '')),
 };
