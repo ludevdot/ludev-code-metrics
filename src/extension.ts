@@ -18,6 +18,12 @@ export function activate(context: vscode.ExtensionContext): void {
     )
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeUsage.installSkill', () => {
+      void vscode.commands.executeCommand('claudeUsage.sidebar.focus');
+    })
+  );
+
   if (!getAccessToken()) {
     const enterBtn = vscode.l10n.t('Enter token manually');
     void vscode.window.showWarningMessage(

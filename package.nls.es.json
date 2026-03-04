@@ -2,6 +2,7 @@
   "command.refresh.title": "Claude Usage: Actualizar ahora",
   "command.setToken.title": "Claude Usage: Introducir token manualmente",
   "command.setCredentialsPath.title": "Claude Usage: Establecer ruta del archivo de credenciales",
+  "command.installSkill.title": "Claude Usage: Instalar Skill",
   "config.credentialsPath.description": "Ruta a un archivo JSON de credenciales de Claude Code (p. ej. ~/.claude/.credentials.json). Proporciona las credenciales completas incluyendo el tipo de plan. Tiene prioridad sobre el token manual.",
   "config.title": "Uso de Claude Code",
   "view.container.title": "Uso de Claude Code",

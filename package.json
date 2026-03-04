@@ -64,6 +64,10 @@
       {
         "command": "claudeUsage.setCredentialsPath",
         "title": "%command.setCredentialsPath.title%"
+      },
+      {
+        "command": "claudeUsage.installSkill",
+        "title": "%command.installSkill.title%"
       }
     ],
     "configuration": {
