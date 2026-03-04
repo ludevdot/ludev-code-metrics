@@ -232,6 +232,11 @@ export function getSharedStyles(): string {
       padding: 3px 6px;
       display: block;
       opacity: 0.9;
+      word-break: break-all;
+    }
+    .account-hint-tip {
+      font-style: italic;
+      opacity: 0.5 !important;
     }
 
     /* ── Helpers ── */

@@ -394,9 +394,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       accountDefault:    vscode.l10n.t('Default'),
       accountAdd:        vscode.l10n.t('Add account'),
       accountHintTitle:  vscode.l10n.t('How to add another account'),
-      accountHintStep1:  vscode.l10n.t('While logged in as the account you want to add, copy the credentials file:'),
-      accountHintStep2file: vscode.l10n.t('Click + → "Credentials file" → select the copied file.'),
-      accountHintStep2token: vscode.l10n.t('Or click + → "Token" → paste the accessToken value from that file.'),
+      accountHintMac1:   vscode.l10n.t('On macOS, credentials live in the Keychain. While logged in as the other account, run this in your terminal to get its token:'),
+      accountHintMac2:   vscode.l10n.t('Then click + → Token and paste the result.'),
+      accountHintMac3:   vscode.l10n.t('Tip: log in with the second account via the Claude Code CLI, copy the token, then log back in to your main account.'),
+      accountHintFile1:  vscode.l10n.t('On Linux/Windows, copy the credentials file while logged in as the other account:'),
+      accountHintFile2:  vscode.l10n.t('Then click + → Credentials file and select the copied file.'),
     };
 
     // Build account selector options
@@ -441,10 +443,16 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   <details class="account-hint">
     <summary class="account-hint-summary">${i18n.accountHintTitle}</summary>
     <div class="account-hint-body">
-      <p>${i18n.accountHintStep1}</p>
+      ${process.platform === 'darwin' ? `
+      <p>${i18n.accountHintMac1}</p>
+      <code>security find-generic-password -s "Claude Code-credentials" -w | python3 -c "import sys,json; print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])"</code>
+      <p>${i18n.accountHintMac2}</p>
+      <p class="account-hint-tip">${i18n.accountHintMac3}</p>
+      ` : `
+      <p>${i18n.accountHintFile1}</p>
       <code>~/.claude/.credentials.json</code>
-      <p>${i18n.accountHintStep2file}</p>
-      <p>${i18n.accountHintStep2token}</p>
+      <p>${i18n.accountHintFile2}</p>
+      `}
     </div>
   </details>
 

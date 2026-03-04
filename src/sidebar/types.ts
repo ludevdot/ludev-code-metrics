@@ -52,7 +52,9 @@ export interface SidebarI18n {
   accountDefault: string;
   accountAdd: string;
   accountHintTitle: string;
-  accountHintStep1: string;
-  accountHintStep2file: string;
-  accountHintStep2token: string;
+  accountHintMac1: string;
+  accountHintMac2: string;
+  accountHintMac3: string;
+  accountHintFile1: string;
+  accountHintFile2: string;
 }
