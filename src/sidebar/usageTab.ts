@@ -415,6 +415,25 @@ export function getUsageTabScript(): string {
       document.getElementById('planBadge').style.display = 'none';
       document.getElementById('footer').textContent = '';
     }
+
+    if (msg.type === 'planUpdated') {
+      const badge = document.getElementById('planBadge');
+      if (msg.planLabel) {
+        badge.textContent = msg.planLabel;
+        badge.style.display = '';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    if (msg.type === 'accountsUpdated') {
+      const sel = document.getElementById('accountSelect');
+      if (!sel) { return; }
+      sel.innerHTML = msg.accounts.map(function (o) {
+        const selected = o.value === msg.activeLabel ? ' selected' : '';
+        return '<option value="' + o.value + '"' + selected + '>' + o.label + '</option>';
+      }).join('');
+    }
   });
   `;
 }

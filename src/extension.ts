@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { UsageStatusBar } from './statusBar';
 import { UsageSidebarProvider } from './sidebarView';
-import { getAccessToken } from './credentials';
+import { getAccessTokenForAccount, getActiveAccount } from './credentials';
 
 let statusBar: UsageStatusBar | undefined;
 let sidebarProvider: UsageSidebarProvider | undefined;
@@ -11,6 +11,7 @@ export function activate(context: vscode.ExtensionContext): void {
   void statusBar.start();
 
   sidebarProvider = new UsageSidebarProvider(context);
+  sidebarProvider.onAccountSwitch = () => { void statusBar?.refresh(); };
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       UsageSidebarProvider.viewType,
@@ -24,7 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
-  if (!getAccessToken()) {
+  if (!getAccessTokenForAccount(getActiveAccount(context))) {
     const enterBtn = vscode.l10n.t('Enter token manually');
     void vscode.window.showWarningMessage(
       vscode.l10n.t('Claude Code credentials not found. Set a token to see your usage data.'),

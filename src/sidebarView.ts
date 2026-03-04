@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
-import { getAccessToken, getSubscriptionType } from './credentials';
+import {
+  getAccessTokenForAccount, getSubscriptionTypeForAccount,
+  getActiveAccount, setActiveAccount, getConfiguredAccounts,
+  DEFAULT_ACCOUNT_LABEL,
+} from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
 import { formatTimeLeft } from './utils';
 import * as fs from 'fs';
@@ -16,6 +20,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private lastData: UsageLimits | null = null;
 
+  /** Called after active account changes, so extension.ts can refresh the status bar. */
+  public onAccountSwitch?: () => void;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -118,6 +124,13 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           }
         })();
       }
+      if (msg.type === 'switchAccount') {
+        void (async () => {
+          await setActiveAccount(this.context, msg.label as string);
+          await this.refresh();
+          this.onAccountSwitch?.();
+        })();
+      }
     });
 
     webviewView.onDidChangeVisibility(() => {
@@ -151,12 +164,15 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   }
 
   async refresh(): Promise<void> {
-    const token = getAccessToken();
+    const account = getActiveAccount(this.context);
+    const token = getAccessTokenForAccount(account);
     if (!token) {
       this.post({ type: 'noAuth' });
       this.setBadge(true);
       return;
     }
+    const subType = getSubscriptionTypeForAccount(account);
+    this.post({ type: 'planUpdated', planLabel: formatPlanLabel(subType) });
     try {
       const data = await fetchUsage(token);
       this.lastData = data;
@@ -199,6 +215,14 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
   dispose(): void {}
 
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   private getHtml(_webview: vscode.Webview): string {
     const nonce = Array.from(
       { length: 32 },
@@ -211,7 +235,10 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       .getConfiguration('claudeUsage')
       .get<string>('viewMode', 'extended');
 
-    const subType   = getSubscriptionType();
+    const activeAccount = getActiveAccount(this.context);
+    const configuredAccounts = getConfiguredAccounts();
+    const activeLabel = activeAccount?.label ?? DEFAULT_ACCOUNT_LABEL;
+    const subType   = getSubscriptionTypeForAccount(activeAccount);
     const planLabel = formatPlanLabel(subType);
 
     const i18n: SidebarI18n = {
@@ -264,7 +291,18 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       sessionLabel:     vscode.l10n.t('Session (5h)'),
       weeklyLabel:      vscode.l10n.t('Weekly (7d)'),
       opusLabel:        vscode.l10n.t('Opus (7d)'),
+      accountLabel:     vscode.l10n.t('Account'),
+      accountDefault:   vscode.l10n.t('Default'),
     };
+
+    // Build account selector options
+    const allAccounts = [
+      { label: i18n.accountDefault, value: DEFAULT_ACCOUNT_LABEL },
+      ...configuredAccounts.map(a => ({ label: a.label, value: a.label })),
+    ];
+    const accountOptionsHtml = allAccounts
+      .map(o => `<option value="${this.escapeHtml(o.value)}"${o.value === activeLabel ? ' selected' : ''}>${this.escapeHtml(o.label)}</option>`)
+      .join('');
 
     return /* html */`<!DOCTYPE html>
 <html lang="en">
@@ -288,6 +326,13 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     <button class="refresh-btn" id="refreshBtn" title="${i18n.refresh}">⟳</button>
   </div>
 
+  <div class="account-row">
+    <span class="account-row-label">${i18n.accountLabel}</span>
+    <select class="account-select" id="accountSelect">
+      ${accountOptionsHtml}
+    </select>
+  </div>
+
   <div class="tab-bar">
     <button class="tab active" data-tab="usage">${i18n.tabUsage}</button>
     <button class="tab" data-tab="skills">${i18n.skillsLabel}</button>
@@ -299,6 +344,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 <script nonce="${nonce}">
   const INITIAL_STYLE    = ${JSON.stringify(currentStyle)};
   const INITIAL_VIEW_MODE = ${JSON.stringify(currentViewMode)};
+  const INITIAL_ACCOUNTS = ${JSON.stringify(allAccounts)};
   const I18N  = ${JSON.stringify(i18n)};
   const vscode = acquireVsCodeApi();
 
@@ -338,6 +384,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   document.getElementById('refreshBtn').addEventListener('click', doRefresh);
   document.getElementById('setTokenBtn').addEventListener('click', doSetToken);
   document.getElementById('setCredPathBtn').addEventListener('click', doSetCredPath);
+
+  // ── Account selector ──
+  document.getElementById('accountSelect').addEventListener('change', function () {
+    vscode.postMessage({ type: 'switchAccount', label: this.value });
+  });
 
   ${getUsageTabScript()}
   ${getSkillsTabScript()}

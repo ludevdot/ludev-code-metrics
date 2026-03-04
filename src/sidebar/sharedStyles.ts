@@ -140,6 +140,39 @@ export function getSharedStyles(): string {
       padding-top: 0;
     }
 
+    /* ── Account selector ── */
+    .account-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .account-row-label {
+      font-size: 10px;
+      opacity: 0.5;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .account-select {
+      flex: 1;
+      min-width: 0;
+      font-size: 11px;
+      font-family: var(--vscode-font-family);
+      color: var(--vscode-foreground);
+      background: var(--vscode-dropdown-background, var(--vscode-editor-background));
+      border: 1px solid var(--vscode-dropdown-border, rgba(128,128,128,0.3));
+      border-radius: 4px;
+      padding: 3px 6px;
+      cursor: pointer;
+    }
+    .account-select:focus {
+      outline: 1px solid var(--vscode-focusBorder, #007fd4);
+      outline-offset: -1px;
+    }
+
     /* ── Helpers ── */
     .hidden { display: none !important; }
     @keyframes spin { to { transform: rotate(360deg); } }
