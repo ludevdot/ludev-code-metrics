@@ -35,7 +35,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   ): void {
     this.view = webviewView;
 
-    if (!getAccessToken()) {
+    if (!getAccessTokenForAccount(getActiveAccount(this.context))) {
       webviewView.badge = { value: 1, tooltip: vscode.l10n.t('No credentials found') };
     }
 
