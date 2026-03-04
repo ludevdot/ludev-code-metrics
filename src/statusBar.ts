@@ -74,6 +74,10 @@ export class UsageStatusBar {
     await this.refresh();
   }
 
+  clearCache(): void {
+    this.lastValidData = null;
+  }
+
   async refresh(): Promise<void> {
     const account = getActiveAccount(this.context);
     const token = getAccessTokenForAccount(account);

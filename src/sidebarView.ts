@@ -20,11 +20,10 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private lastData: UsageLimits | null = null;
 
-  /**
-   * Called after any successful data refresh (account switch or manual refresh),
-   * so extension.ts can keep the status bar in sync.
-   */
+  /** Called after any successful data refresh so the status bar stays in sync. */
   public onRefresh?: () => void;
+  /** Called when the user explicitly switches/adds an account — clears status bar cache first. */
+  public onAccountChange?: () => void;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -130,8 +129,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       if (msg.type === 'switchAccount') {
         void (async () => {
           await setActiveAccount(this.context, msg.label as string);
+          this.lastData = null;
+          this.onAccountChange?.();
           await this.refresh();
-          // onRefresh is already called inside refresh() on success
         })();
       }
       if (msg.type === 'addAccount') {
@@ -277,6 +277,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       if (active?.label === picked.label) {
         await setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL);
       }
+      this.lastData = null;
+      this.onAccountChange?.();
       await this.refresh();
     }
 
@@ -304,6 +306,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       if (active?.label === picked.label) {
         await setActiveAccount(this.context, newLabel.trim());
       }
+      this.onAccountChange?.();
       await this.refresh();
     }
   }
@@ -378,6 +381,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       .getConfiguration('claudeUsage')
       .update('accounts', [...existing, newEntry], vscode.ConfigurationTarget.Global);
     await setActiveAccount(this.context, newEntry.label);
+    this.lastData = null;
+    this.onAccountChange?.();
     await this.refresh();
   }
 
