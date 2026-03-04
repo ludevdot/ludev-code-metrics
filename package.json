@@ -2,7 +2,7 @@
   "name": "claude-usage-indicator",
   "displayName": "Claude Code Usage",
   "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
-  "version": "0.0.18",
+  "version": "1.0.0",
   "publisher": "claude-usage",
   "license": "MIT",
   "repository": {
