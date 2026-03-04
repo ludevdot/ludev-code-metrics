@@ -433,7 +433,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       <h2>${i18n.title}</h2>
       ${planLabel ? `<span class="plan-badge" id="planBadge">${planLabel}</span>` : '<span class="plan-badge" id="planBadge" style="display:none"></span>'}
     </div>
-    <button class="refresh-btn" id="refreshBtn" title="${i18n.refresh}">⟳</button>
+    <button class="refresh-btn" id="refreshBtn">↻ ${i18n.refresh}</button>
   </div>
 
   <div class="account-row">
