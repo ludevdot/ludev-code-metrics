@@ -244,6 +244,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       hLeft:          vscode.l10n.t('{0}h left', '{0}'),
       mLeft:          vscode.l10n.t('{0}m left', '{0}'),
       overview:       vscode.l10n.t('Overview'),
+      tabUsage:       vscode.l10n.t('Usage'),
       skillsLabel:    vscode.l10n.t('Skills'),
       skillsSearch:   vscode.l10n.t('Search skills (min. 2 characters)'),
       skillsEmpty:    vscode.l10n.t('Type to search skills (min. 2 characters)'),
@@ -639,6 +640,38 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     .skill-preview-feedback.success { color: var(--vscode-charts-green, #4caf74); }
     .skill-preview-feedback.error   { color: var(--vscode-errorForeground, #f44); }
 
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+    }
+    .tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 5px 12px 6px;
+      font-size: 12px;
+      font-family: var(--vscode-font-family);
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      opacity: 0.55;
+      transition: opacity 0.12s, border-color 0.12s;
+      margin-bottom: -1px;
+    }
+    .tab:hover { opacity: 0.85; }
+    .tab.active {
+      opacity: 1;
+      border-bottom-color: var(--vscode-focusBorder, #007fd4);
+      font-weight: 600;
+    }
+    .tab-panel > .style-picker:first-child {
+      border-top: none;
+      margin-top: 0;
+      padding-top: 0;
+    }
+
     /* ── Helpers ── */
     .hidden { display: none !important; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -653,6 +686,13 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     </div>
     <button class="refresh-btn" id="refreshBtn" title="${i18n.refresh}">⟳</button>
   </div>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="usage">${i18n.tabUsage}</button>
+    <button class="tab" data-tab="skills">${i18n.skillsLabel}</button>
+  </div>
+
+  <div id="tab-usage" class="tab-panel">
 
   <div id="cards">
     ${makeOverviewCard(i18n, currentViewMode === 'compact')}
@@ -718,8 +758,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     </div>
   </div>
 
-  <div class="style-picker">
-    <div class="section-label">${i18n.skillsLabel}</div>
+  <div class="footer" id="footer"></div>
+
+  </div><!-- #tab-usage -->
+
+  <div id="tab-skills" class="tab-panel hidden">
     <input
       class="skills-search"
       id="skillsSearch"
@@ -743,15 +786,28 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       </div>
       <div class="skill-preview-feedback hidden" id="installFeedback"></div>
     </div>
-  </div>
-
-  <div class="footer" id="footer"></div>
+  </div><!-- #tab-skills -->
 
 <script nonce="${nonce}">
   const INITIAL_STYLE = ${JSON.stringify(currentStyle)};
   const INITIAL_VIEW_MODE = ${JSON.stringify(currentViewMode)};
   const I18N = ${JSON.stringify(i18n)};
   const vscode = acquireVsCodeApi();
+
+  // ── Tab switching ──
+  (function () {
+    const panels = {
+      usage:  document.getElementById('tab-usage'),
+      skills: document.getElementById('tab-skills'),
+    };
+    document.querySelectorAll('.tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.tab;
+        document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+        Object.entries(panels).forEach(([k, el]) => el.classList.toggle('hidden', k !== name));
+      });
+    });
+  })();
 
   function doRefresh() {
     const btn = document.getElementById('refreshBtn');
