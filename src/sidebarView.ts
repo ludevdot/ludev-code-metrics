@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { getAccessToken, getSubscriptionType } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
 import { formatTimeLeft } from './utils';
+import { searchSkills, loadCache, saveCache, SkillResult } from './skillsManager';
 
 export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'claudeUsage.sidebar';
@@ -29,6 +30,10 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage((msg) => {
       if (msg.type === 'ready') {
         void this.refresh();
+        const cached = loadCache(this.context);
+        if (cached) {
+          this.post({ type: 'cacheResults', skills: cached, count: cached.length });
+        }
       }
       if (msg.type === 'refresh') {
         void this.refresh();
@@ -55,6 +60,17 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
             await vscode.workspace
               .getConfiguration('claudeUsage')
               .update('manualToken', token.trim(), vscode.ConfigurationTarget.Global);
+          }
+        })();
+      }
+      if (msg.type === 'searchSkills') {
+        void (async () => {
+          try {
+            const res = await searchSkills(msg.query as string);
+            saveCache(this.context, res.skills);
+            this.post({ type: 'searchResults', skills: res.skills, count: res.count });
+          } catch {
+            this.post({ type: 'searchResults', skills: [], count: 0 });
           }
         })();
       }
@@ -212,6 +228,12 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       hLeft:          vscode.l10n.t('{0}h left', '{0}'),
       mLeft:          vscode.l10n.t('{0}m left', '{0}'),
       overview:       vscode.l10n.t('Overview'),
+      skillsLabel:    vscode.l10n.t('Skills'),
+      skillsSearch:   vscode.l10n.t('Search skills (min. 2 characters)'),
+      skillsEmpty:    vscode.l10n.t('Type to search skills (min. 2 characters)'),
+      skillsNoResults:vscode.l10n.t('No results'),
+      skillsRefine:   vscode.l10n.t('Refine your search to see more results'),
+      skillsInstalls: vscode.l10n.t('installs'),
       sessionLabel:   vscode.l10n.t('Session (5h)'),
       weeklyLabel:    vscode.l10n.t('Weekly (7d)'),
       opusLabel:      vscode.l10n.t('Opus (7d)'),
@@ -498,6 +520,60 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       text-align: right;
     }
 
+    /* ── Skills section ── */
+    .skills-search {
+      width: 100%;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-family: var(--vscode-font-family);
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border, rgba(128,128,128,0.3));
+      border-radius: 4px;
+      outline: none;
+      margin-bottom: 6px;
+    }
+    .skills-search:focus {
+      border-color: var(--vscode-focusBorder, #007fd4);
+    }
+    .skills-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .skills-placeholder {
+      font-size: 11px;
+      opacity: 0.45;
+      padding: 4px 2px;
+    }
+    .skill-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 5px 7px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .skill-item:hover { background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.1)); }
+    .skill-item.installed::after {
+      content: '✓';
+      margin-left: auto;
+      font-size: 10px;
+      opacity: 0.6;
+      color: var(--vscode-charts-green, #4caf74);
+    }
+    .skill-name { font-size: 12px; font-weight: 600; flex-shrink: 0; }
+    .skill-source { font-size: 10px; opacity: 0.5; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .skill-installs { font-size: 10px; opacity: 0.45; flex-shrink: 0; margin-left: auto; }
+    .skills-refine {
+      font-size: 10px;
+      opacity: 0.5;
+      font-style: italic;
+      padding: 4px 2px 0;
+    }
+
     /* ── Helpers ── */
     .hidden { display: none !important; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -575,6 +651,21 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         <span class="style-opt-preview">✓ ▰▰▰▰▰▱▱▱▱▱</span>
       </label>
     </div>
+  </div>
+
+  <div class="style-picker">
+    <div class="section-label">${i18n.skillsLabel}</div>
+    <input
+      class="skills-search"
+      id="skillsSearch"
+      type="text"
+      placeholder="${i18n.skillsSearch}"
+      autocomplete="off"
+    />
+    <ul class="skills-list" id="skillsList">
+      <li class="skills-placeholder">${i18n.skillsEmpty}</li>
+    </ul>
+    <p class="skills-refine hidden" id="skillsRefine">${i18n.skillsRefine}</p>
   </div>
 
   <div class="footer" id="footer"></div>
@@ -750,6 +841,61 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       document.getElementById('footer').textContent = '';
     }
   });
+
+  // ── Skills search ──
+  (function () {
+    const searchInput = document.getElementById('skillsSearch');
+    const skillsList  = document.getElementById('skillsList');
+    const refineWarn  = document.getElementById('skillsRefine');
+    let debounceTimer;
+
+    function renderSkills(skills, count) {
+      skillsList.innerHTML = '';
+      refineWarn.classList.toggle('hidden', count < 50);
+
+      if (!skills.length) {
+        const li = document.createElement('li');
+        li.className = 'skills-placeholder';
+        li.textContent = I18N.skillsNoResults;
+        skillsList.appendChild(li);
+        return;
+      }
+
+      skills.forEach(function (skill) {
+        const li = document.createElement('li');
+        li.className = 'skill-item';
+        li.dataset.skillId = skill.skillId;
+        li.innerHTML =
+          '<span class="skill-name">' + skill.name + '</span>' +
+          '<span class="skill-source">' + skill.source + '</span>' +
+          '<span class="skill-installs">' + skill.installs + ' ' + I18N.skillsInstalls + '</span>';
+        li.addEventListener('click', function () {
+          vscode.postMessage({ type: 'selectSkill', skill: skill });
+        });
+        skillsList.appendChild(li);
+      });
+    }
+
+    searchInput.addEventListener('input', function () {
+      clearTimeout(debounceTimer);
+      const query = searchInput.value.trim();
+      if (query.length < 2) {
+        skillsList.innerHTML = '<li class="skills-placeholder">' + I18N.skillsEmpty + '</li>';
+        refineWarn.classList.add('hidden');
+        return;
+      }
+      debounceTimer = setTimeout(function () {
+        vscode.postMessage({ type: 'searchSkills', query: query });
+      }, 400);
+    });
+
+    window.addEventListener('message', function (event) {
+      const msg = event.data;
+      if (msg.type === 'searchResults' || msg.type === 'cacheResults') {
+        renderSkills(msg.skills, msg.count);
+      }
+    });
+  }());
 
   // Signal extension that webview JS is ready to receive messages
   vscode.postMessage({ type: 'ready' });
