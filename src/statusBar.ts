@@ -13,7 +13,7 @@ export class UsageStatusBar {
   private lastValidData: UsageLimits | null = null;
   private readonly disposables: vscode.Disposable[] = [];
 
-  constructor(context: vscode.ExtensionContext) {
+  constructor(private readonly context: vscode.ExtensionContext) {
     this.sessionItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
       100
