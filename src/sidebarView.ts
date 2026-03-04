@@ -11,7 +11,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
   private view?: vscode.WebviewView;
   private lastData: UsageLimits | null = null;
-  private pollingInterval: ReturnType<typeof setInterval> | undefined;
+
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -122,13 +122,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       }
     });
 
-    this.startPolling();
-
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('claudeUsage.refreshInterval')) {
-          this.restartPolling();
-        }
         if (e.affectsConfiguration('claudeUsage.barStyle')) {
           const style = vscode.workspace
             .getConfiguration('claudeUsage')
@@ -186,19 +181,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private startPolling(): void {
-    const config = vscode.workspace.getConfiguration('claudeUsage');
-    const intervalSec = Math.max(30, config.get<number>('refreshInterval', 60));
-    this.pollingInterval = setInterval(() => { void this.refresh(); }, intervalSec * 1000);
-  }
-
-  private restartPolling(): void {
-    if (this.pollingInterval !== undefined) {
-      clearInterval(this.pollingInterval);
-    }
-    this.startPolling();
-  }
-
   private getInstalledSkillIds(): string[] {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) { return []; }
@@ -211,11 +193,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  dispose(): void {
-    if (this.pollingInterval !== undefined) {
-      clearInterval(this.pollingInterval);
-    }
-  }
+  dispose(): void {}
 
   private getHtml(_webview: vscode.Webview): string {
     const nonce = Array.from(

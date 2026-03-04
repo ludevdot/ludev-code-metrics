@@ -69,7 +69,6 @@ export class UsageStatusBar {
 
   async start(): Promise<void> {
     await this.refresh();
-    this.startPolling();
   }
 
   async refresh(): Promise<void> {
@@ -178,18 +177,7 @@ export class UsageStatusBar {
     this.weeklyItem.hide();
   }
 
-  private startPolling(): void {
-    const config = vscode.workspace.getConfiguration('claudeUsage');
-    const intervalSec = Math.max(30, config.get<number>('refreshInterval', 60));
-    this.pollingInterval = setInterval(() => { void this.refresh(); }, intervalSec * 1000);
-  }
-
   private restartPolling(): void {
-    if (this.pollingInterval !== undefined) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = undefined;
-    }
-    this.startPolling();
     void this.refresh();
   }
 
