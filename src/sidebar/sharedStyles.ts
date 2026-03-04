@@ -31,7 +31,7 @@ export function getSharedStyles(): string {
       cursor: pointer;
       color: var(--vscode-foreground);
       opacity: 0.6;
-      font-size: 16px;
+      font-size: 13px;
       line-height: 1;
       padding: 2px 4px;
       border-radius: 4px;
