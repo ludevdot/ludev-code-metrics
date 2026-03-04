@@ -86,9 +86,7 @@ export class UsageStatusBar {
       return;
     }
 
-    const accountLabel = (account && account.label !== DEFAULT_ACCOUNT_LABEL)
-      ? account.label
-      : null;
+    const accountLabel = account?.email ?? null;
 
     try {
       const data = await fetchUsage(token);

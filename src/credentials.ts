@@ -7,9 +7,9 @@ import * as vscode from 'vscode';
 export const DEFAULT_ACCOUNT_LABEL = '__default__';
 
 export interface AccountConfig {
-  label: string;
-  token?: string;
-  credentialsPath?: string;
+  email: string;
+  subscriptionType?: string;
+  token: string;
 }
 
 interface ClaudeCredentials {
@@ -198,32 +198,40 @@ export function getSubscriptionType(): string | null {
   return null;
 }
 
-/**
- * Returns the access token for the given account.
- * - token field set  → use it directly
- * - credentialsPath set → read from file
- * - null / DEFAULT_ACCOUNT_LABEL → fall back to auto-detect
- */
+/** Returns the access token for the given account, or auto-detects if null. */
 export function getAccessTokenForAccount(account: AccountConfig | null): string | null {
-  if (account && account.label !== DEFAULT_ACCOUNT_LABEL) {
-    if (account.token) { return account.token.trim() || null; }
-    if (account.credentialsPath) { return readTokenFromFile(account.credentialsPath); }
-  }
+  if (account) { return account.token || null; }
   return getAccessToken();
 }
 
-/**
- * Returns the subscription type for the given account.
- * Token-only accounts return null (no subscription info available).
- */
+/** Returns the subscription type for the given account, or auto-detects if null. */
 export function getSubscriptionTypeForAccount(account: AccountConfig | null): string | null {
-  if (account && account.label !== DEFAULT_ACCOUNT_LABEL) {
-    if (account.token) { return null; }
-    if (account.credentialsPath) {
-      return readCredentialsFromFile(account.credentialsPath)?.claudeAiOauth.subscriptionType ?? null;
-    }
-  }
+  if (account) { return account.subscriptionType ?? null; }
   return getSubscriptionType();
+}
+
+/** Captures the active CLI session: runs `claude auth status` and reads the token from the OS. */
+export function captureCliSession(): { email: string; subscriptionType: string; token: string } | null {
+  try {
+    const raw = child_process.execSync('claude auth status', {
+      encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 8000,
+    }).trim();
+    const status = JSON.parse(raw) as {
+      loggedIn: boolean; email?: string; subscriptionType?: string;
+    };
+    if (!status.loggedIn || !status.email) { return null; }
+
+    const token = getAccessToken();
+    if (!token) { return null; }
+
+    return {
+      email: status.email,
+      subscriptionType: status.subscriptionType ?? '',
+      token,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Returns the configured accounts from settings. Deduplicates by label. */
@@ -232,15 +240,15 @@ export function getConfiguredAccounts(): AccountConfig[] {
     .getConfiguration('claudeUsage')
     .get<AccountConfig[]>('accounts', []);
   const seen = new Set<string>();
-  return raw.filter(a => a.label && !seen.has(a.label) && seen.add(a.label));
+  return raw.filter(a => a.email && !seen.has(a.email) && seen.add(a.email));
 }
 
 /** Returns the active account from globalState, or null for the Default auto-detect account. */
 export function getActiveAccount(context: vscode.ExtensionContext): AccountConfig | null {
-  const label = context.globalState.get<string>('claudeUsage.activeAccount', DEFAULT_ACCOUNT_LABEL);
-  if (!label || label === DEFAULT_ACCOUNT_LABEL) { return null; }
+  const email = context.globalState.get<string>('claudeUsage.activeAccount', DEFAULT_ACCOUNT_LABEL);
+  if (!email || email === DEFAULT_ACCOUNT_LABEL) { return null; }
   const accounts = getConfiguredAccounts();
-  return accounts.find(a => a.label === label) ?? null;
+  return accounts.find(a => a.email === email) ?? null;
 }
 
 /** Persists the active account label to globalState. */

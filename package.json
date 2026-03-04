@@ -129,20 +129,21 @@
           "items": {
             "type": "object",
             "required": [
-              "label"
+              "email",
+              "token"
             ],
             "properties": {
-              "label": {
+              "email": {
                 "type": "string",
-                "description": "Display name for this account. The value __default__ is reserved."
+                "description": "Account email, set automatically when capturing a session."
+              },
+              "subscriptionType": {
+                "type": "string",
+                "description": "Subscription type, set automatically when capturing a session."
               },
               "token": {
                 "type": "string",
-                "description": "Raw OAuth access token. Stored in settings.json — do not commit to version control."
-              },
-              "credentialsPath": {
-                "type": "string",
-                "description": "Path to a Claude Code credentials JSON file for this account."
+                "description": "OAuth token. Set automatically. Do not commit to version control."
               }
             }
           }

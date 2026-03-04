@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import {
   getAccessTokenForAccount, getSubscriptionTypeForAccount,
   getActiveAccount, setActiveAccount, getConfiguredAccounts,
-  DEFAULT_ACCOUNT_LABEL,
+  captureCliSession, DEFAULT_ACCOUNT_LABEL,
 } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
 import { formatTimeLeft } from './utils';
@@ -134,8 +134,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           await this.refresh();
         })();
       }
-      if (msg.type === 'addAccount') {
-        void this.runAddAccountFlow();
+      if (msg.type === 'captureSession') {
+        void this.runCaptureSessionFlow();
       }
       if (msg.type === 'manageAccounts') {
         void this.runManageAccountsFlow();
@@ -171,14 +171,14 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         if (e.affectsConfiguration('claudeUsage.accounts')) {
           const accounts = getConfiguredAccounts();
           const active = getActiveAccount(this.context);
-          const activeRemoved = active && !accounts.find(a => a.label === active.label);
+          const activeRemoved = active && !accounts.find(a => a.email === active.email);
           if (activeRemoved) {
             void setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL).then(() => this.refresh());
           } else {
             void this.refresh();
           }
-          const newActiveLabel = activeRemoved ? '' : (active?.label ?? '');
-          const updatedOptions = accounts.map(a => ({ label: a.label, value: a.label }));
+          const newActiveLabel = activeRemoved ? '' : (active?.email ?? '');
+          const updatedOptions = accounts.map(a => ({ label: formatAccountOption(a), value: a.email }));
           this.post({ type: 'accountsUpdated', accounts: updatedOptions, activeLabel: newActiveLabel });
         }
       })
@@ -239,151 +239,66 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   private async runManageAccountsFlow(): Promise<void> {
     const accounts = getConfiguredAccounts();
     if (accounts.length === 0) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No accounts configured yet. Use + to add one.'));
+      void vscode.window.showInformationMessage(vscode.l10n.t('No accounts captured yet. Use ⊕ to capture the current CLI session.'));
       return;
     }
 
-    // Pick account to manage
     const picked = await vscode.window.showQuickPick(
-      accounts.map(a => ({ label: a.label, description: a.credentialsPath ?? (a.token ? vscode.l10n.t('token') : '') })),
-      { title: vscode.l10n.t('Manage accounts — select an account'), placeHolder: vscode.l10n.t('Select account to edit or delete') }
+      accounts.map(a => ({ label: formatAccountOption(a), description: '', email: a.email })),
+      { title: vscode.l10n.t('Manage accounts'), placeHolder: vscode.l10n.t('Select account to delete') }
     );
     if (!picked) { return; }
 
-    const action = await vscode.window.showQuickPick(
-      [
-        { label: vscode.l10n.t('$(edit) Rename'), value: 'rename' as const },
-        { label: vscode.l10n.t('$(trash) Delete'), value: 'delete' as const },
-      ],
-      { title: vscode.l10n.t('Manage "{0}"', picked.label) }
+    const confirmed = await vscode.window.showWarningMessage(
+      vscode.l10n.t('Delete account "{0}"?', picked.email),
+      { modal: true },
+      vscode.l10n.t('Delete')
     );
-    if (!action) { return; }
+    if (confirmed !== vscode.l10n.t('Delete')) { return; }
 
-    const current = getConfiguredAccounts();
+    const updated = accounts.filter(a => a.email !== picked.email);
+    await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
 
-    if (action.value === 'delete') {
-      const confirmed = await vscode.window.showWarningMessage(
-        vscode.l10n.t('Delete account "{0}"?', picked.label),
-        { modal: true },
-        vscode.l10n.t('Delete')
-      );
-      if (confirmed !== vscode.l10n.t('Delete')) { return; }
-
-      const updated = current.filter(a => a.label !== picked.label);
-      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
-
-      // If active account was deleted, clear it
-      const active = getActiveAccount(this.context);
-      if (active?.label === picked.label) {
-        await setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL);
-      }
-      this.lastData = null;
-      this.onAccountChange?.();
-      await this.refresh();
+    const active = getActiveAccount(this.context);
+    if (active?.email === picked.email) {
+      await setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL);
     }
-
-    if (action.value === 'rename') {
-      const newLabel = await vscode.window.showInputBox({
-        title: vscode.l10n.t('Rename "{0}"', picked.label),
-        value: picked.label,
-        ignoreFocusOut: true,
-        validateInput: (v) => {
-          if (!v.trim()) { return vscode.l10n.t('Name cannot be empty'); }
-          if (v.trim() === DEFAULT_ACCOUNT_LABEL) { return vscode.l10n.t('That name is reserved'); }
-          if (v.trim() !== picked.label && current.find(a => a.label === v.trim())) {
-            return vscode.l10n.t('An account with that name already exists');
-          }
-          return null;
-        },
-      });
-      if (!newLabel || newLabel.trim() === picked.label) { return; }
-
-      const updated = current.map(a => a.label === picked.label ? { ...a, label: newLabel.trim() } : a);
-      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
-
-      // Update active account reference if it was renamed
-      const active = getActiveAccount(this.context);
-      if (active?.label === picked.label) {
-        await setActiveAccount(this.context, newLabel.trim());
-      }
-      this.onAccountChange?.();
-      await this.refresh();
-    }
-  }
-
-  private async runAddAccountFlow(): Promise<void> {
-    // 1. Label
-    const label = await vscode.window.showInputBox({
-      title: vscode.l10n.t('Add account — step 1/2'),
-      prompt: vscode.l10n.t('Enter a name for this account (e.g. "Work", "Personal")'),
-      placeHolder: vscode.l10n.t('Account name'),
-      ignoreFocusOut: true,
-      validateInput: (v) => {
-        if (!v.trim()) { return vscode.l10n.t('Name cannot be empty'); }
-        if (v.trim() === DEFAULT_ACCOUNT_LABEL) { return vscode.l10n.t('That name is reserved'); }
-        const existing = getConfiguredAccounts();
-        if (existing.find(a => a.label === v.trim())) {
-          return vscode.l10n.t('An account with that name already exists');
-        }
-        return null;
-      },
-    });
-    if (!label) { return; }
-
-    // 2. Credential type
-    const kind = await vscode.window.showQuickPick(
-      [
-        {
-          label: vscode.l10n.t('$(file) Credentials file'),
-          description: vscode.l10n.t('Full .credentials.json — shows plan type'),
-          value: 'file' as const,
-        },
-        {
-          label: vscode.l10n.t('$(key) Token'),
-          description: vscode.l10n.t('Raw OAuth token — usage data only'),
-          value: 'token' as const,
-        },
-      ],
-      {
-        title: vscode.l10n.t('Add account — step 2/2'),
-        placeHolder: vscode.l10n.t('How do you want to authenticate this account?'),
-        ignoreFocusOut: true,
-      }
-    );
-    if (!kind) { return; }
-
-    let newEntry: { label: string; token?: string; credentialsPath?: string };
-
-    if (kind.value === 'file') {
-      const uris = await vscode.window.showOpenDialog({
-        canSelectMany: false,
-        openLabel: vscode.l10n.t('Select credentials file'),
-        filters: { 'JSON': ['json'] },
-      });
-      if (!uris?.[0]) { return; }
-      newEntry = { label: label.trim(), credentialsPath: uris[0].fsPath };
-    } else {
-      const token = await vscode.window.showInputBox({
-        title: vscode.l10n.t('Add account — enter token'),
-        prompt: vscode.l10n.t('Paste your Claude Code OAuth token'),
-        placeHolder: vscode.l10n.t('sk-ant-...'),
-        password: true,
-        ignoreFocusOut: true,
-        validateInput: (v) => v.trim() ? null : vscode.l10n.t('Token cannot be empty'),
-      });
-      if (!token) { return; }
-      newEntry = { label: label.trim(), token: token.trim() };
-    }
-
-    // Append to settings and switch to the new account
-    const existing = getConfiguredAccounts();
-    await vscode.workspace
-      .getConfiguration('claudeUsage')
-      .update('accounts', [...existing, newEntry], vscode.ConfigurationTarget.Global);
-    await setActiveAccount(this.context, newEntry.label);
     this.lastData = null;
     this.onAccountChange?.();
     await this.refresh();
+  }
+
+  private async runCaptureSessionFlow(): Promise<void> {
+    const captured = captureCliSession();
+
+    if (!captured) {
+      void vscode.window.showErrorMessage(
+        vscode.l10n.t('Could not capture session. Make sure Claude Code CLI is installed and you are logged in.')
+      );
+      return;
+    }
+
+    const existing = getConfiguredAccounts();
+    const duplicate = existing.find(a => a.email === captured.email);
+
+    if (duplicate) {
+      const overwrite = await vscode.window.showWarningMessage(
+        vscode.l10n.t('Account "{0}" is already saved. Update it?', captured.email),
+        { modal: true },
+        vscode.l10n.t('Update')
+      );
+      if (overwrite !== vscode.l10n.t('Update')) { return; }
+      const updated = existing.map(a => a.email === captured.email ? captured : a);
+      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
+    } else {
+      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', [...existing, captured], vscode.ConfigurationTarget.Global);
+    }
+
+    await setActiveAccount(this.context, captured.email);
+    this.lastData = null;
+    this.onAccountChange?.();
+    await this.refresh();
+    void vscode.window.showInformationMessage(vscode.l10n.t('Account "{0}" captured.', captured.email));
   }
 
   dispose(): void {}
@@ -410,7 +325,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
     const activeAccount = getActiveAccount(this.context);
     const configuredAccounts = getConfiguredAccounts();
-    const activeLabel = activeAccount?.label ?? DEFAULT_ACCOUNT_LABEL;
     const subType   = getSubscriptionTypeForAccount(activeAccount);
     const planLabel = formatPlanLabel(subType);
 
@@ -464,28 +378,25 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       sessionLabel:     vscode.l10n.t('Session (5h)'),
       weeklyLabel:      vscode.l10n.t('Weekly (7d)'),
       opusLabel:        vscode.l10n.t('Opus (7d)'),
-      accountLabel:      vscode.l10n.t('Account'),
-      accountAdd:        vscode.l10n.t('Add account'),
-      accountManage:     vscode.l10n.t('Manage accounts'),
-      accountHintTitle:      vscode.l10n.t('How to add another account'),
-      accountHintMacIntro:   vscode.l10n.t('On macOS, tokens live in the Keychain. You need to extract each token while that account is active. Do this before switching:'),
-      accountHintMacCmd:     vscode.l10n.t('Run in terminal to get the active token:'),
-      accountHintMacStep1:   vscode.l10n.t('1. While logged in as account B, run the command and copy the output.'),
-      accountHintMacStep2:   vscode.l10n.t('2. Click + → Token → paste it → name it (e.g. "Work").'),
-      accountHintMacStep3:   vscode.l10n.t('3. Log back in as your main account (claude auth login).'),
-      accountHintMacStep4:   vscode.l10n.t('4. "Default" will resume pointing to your main account.'),
-      accountHintMacWarning: vscode.l10n.t('⚠ Token-only accounts do not show plan type.'),
-      accountHintFile1:      vscode.l10n.t('On Linux/Windows, copy the credentials file while logged in as the other account:'),
-      accountHintFile2:      vscode.l10n.t('Then click + → Credentials file and select the copied file.'),
+      accountLabel:     vscode.l10n.t('Account'),
+      accountCapture:   vscode.l10n.t('Capture current CLI session'),
+      accountManage:    vscode.l10n.t('Manage accounts'),
+      accountHintTitle: vscode.l10n.t('How to add another account'),
+      accountHintStep1: vscode.l10n.t('1. In your terminal, log in with the other account:'),
+      accountHintStep2: vscode.l10n.t('2. Come back here and click the capture button (⊕).'),
+      accountHintStep3: vscode.l10n.t('3. Log back in with your main account when done.'),
     };
 
-    // Build account selector options — no Default, only configured accounts
+    // Build account selector options — email · Plan, no Default
     const hasAccounts = configuredAccounts.length > 0;
+    const activeLabel = activeAccount?.email ?? DEFAULT_ACCOUNT_LABEL;
     const accountOptionsHtml = configuredAccounts
-      .map(a => `<option value="${this.escapeHtml(a.label)}"${a.label === activeLabel ? ' selected' : ''}>${this.escapeHtml(a.label)}</option>`)
+      .map(a => {
+        const display = formatAccountOption(a);
+        return `<option value="${this.escapeHtml(a.email)}"${a.email === activeLabel ? ' selected' : ''}>${this.escapeHtml(display)}</option>`;
+      })
       .join('');
-    // For the JS constant we still pass the list (used by accountsUpdated handler)
-    const allAccounts = configuredAccounts.map(a => ({ label: a.label, value: a.label }));
+    const allAccounts = configuredAccounts.map(a => ({ label: formatAccountOption(a), value: a.email }));
 
     return /* html */`<!DOCTYPE html>
 <html lang="en">
@@ -514,27 +425,17 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     <select class="account-select${hasAccounts ? '' : ' hidden'}" id="accountSelect">
       ${accountOptionsHtml}
     </select>
-    <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountAdd}">+</button>
+    <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountCapture}">⊕</button>
     <button class="account-add-btn${hasAccounts ? '' : ' hidden'}" id="manageAccountsBtn" title="${i18n.accountManage}">⋯</button>
   </div>
 
   <details class="account-hint">
     <summary class="account-hint-summary">${i18n.accountHintTitle}</summary>
     <div class="account-hint-body">
-      ${process.platform === 'darwin' ? `
-      <p>${i18n.accountHintMacIntro}</p>
-      <p class="account-hint-substep">${i18n.accountHintMacStep1}</p>
-      <p class="account-hint-sublabel">${i18n.accountHintMacCmd}</p>
-      <code>security find-generic-password -s "Claude Code-credentials" -w | python3 -c "import sys,json; print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])"</code>
-      <p class="account-hint-substep">${i18n.accountHintMacStep2}</p>
-      <p class="account-hint-substep">${i18n.accountHintMacStep3}</p>
-      <p class="account-hint-substep">${i18n.accountHintMacStep4}</p>
-      <p class="account-hint-tip">${i18n.accountHintMacWarning}</p>
-      ` : `
-      <p>${i18n.accountHintFile1}</p>
-      <code>~/.claude/.credentials.json</code>
-      <p>${i18n.accountHintFile2}</p>
-      `}
+      <p class="account-hint-substep">${i18n.accountHintStep1}</p>
+      <code>claude auth login</code>
+      <p class="account-hint-substep">${i18n.accountHintStep2}</p>
+      <p class="account-hint-substep">${i18n.accountHintStep3}</p>
     </div>
   </details>
 
@@ -595,7 +496,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     vscode.postMessage({ type: 'switchAccount', label: this.value });
   });
   document.getElementById('addAccountBtn').addEventListener('click', function () {
-    vscode.postMessage({ type: 'addAccount' });
+    vscode.postMessage({ type: 'captureSession' });
   });
   document.getElementById('manageAccountsBtn').addEventListener('click', function () {
     vscode.postMessage({ type: 'manageAccounts' });
@@ -610,6 +511,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 </body>
 </html>`;
   }
+}
+
+function formatAccountOption(account: import('./credentials').AccountConfig): string {
+  const plan = formatPlanLabel(account.subscriptionType ?? null);
+  return plan ? `${account.email} · ${plan}` : account.email;
 }
 
 function formatPlanLabel(subscriptionType: string | null): string {
