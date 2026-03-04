@@ -137,6 +137,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       if (msg.type === 'addAccount') {
         void this.runAddAccountFlow();
       }
+      if (msg.type === 'manageAccounts') {
+        void this.runManageAccountsFlow();
+      }
     });
 
     webviewView.onDidChangeVisibility(() => {
@@ -169,19 +172,13 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           const accounts = getConfiguredAccounts();
           const active = getActiveAccount(this.context);
           const activeRemoved = active && !accounts.find(a => a.label === active.label);
-          const resetThenRefresh = activeRemoved
-            ? setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL).then(() => this.refresh())
-            : Promise.resolve(this.refresh());
-          void resetThenRefresh;
-
-          const newActiveLabel = activeRemoved
-            ? DEFAULT_ACCOUNT_LABEL
-            : (active?.label ?? DEFAULT_ACCOUNT_LABEL);
-          const defaultLabel = vscode.l10n.t('Default');
-          const updatedOptions = [
-            { label: defaultLabel, value: DEFAULT_ACCOUNT_LABEL },
-            ...accounts.map(a => ({ label: a.label, value: a.label })),
-          ];
+          if (activeRemoved) {
+            void setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL).then(() => this.refresh());
+          } else {
+            void this.refresh();
+          }
+          const newActiveLabel = activeRemoved ? '' : (active?.label ?? '');
+          const updatedOptions = accounts.map(a => ({ label: a.label, value: a.label }));
           this.post({ type: 'accountsUpdated', accounts: updatedOptions, activeLabel: newActiveLabel });
         }
       })
@@ -236,6 +233,78 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       return Object.keys(JSON.parse(fs.readFileSync(lockPath, 'utf-8')));
     } catch {
       return [];
+    }
+  }
+
+  private async runManageAccountsFlow(): Promise<void> {
+    const accounts = getConfiguredAccounts();
+    if (accounts.length === 0) {
+      void vscode.window.showInformationMessage(vscode.l10n.t('No accounts configured yet. Use + to add one.'));
+      return;
+    }
+
+    // Pick account to manage
+    const picked = await vscode.window.showQuickPick(
+      accounts.map(a => ({ label: a.label, description: a.credentialsPath ?? (a.token ? vscode.l10n.t('token') : '') })),
+      { title: vscode.l10n.t('Manage accounts — select an account'), placeHolder: vscode.l10n.t('Select account to edit or delete') }
+    );
+    if (!picked) { return; }
+
+    const action = await vscode.window.showQuickPick(
+      [
+        { label: vscode.l10n.t('$(edit) Rename'), value: 'rename' as const },
+        { label: vscode.l10n.t('$(trash) Delete'), value: 'delete' as const },
+      ],
+      { title: vscode.l10n.t('Manage "{0}"', picked.label) }
+    );
+    if (!action) { return; }
+
+    const current = getConfiguredAccounts();
+
+    if (action.value === 'delete') {
+      const confirmed = await vscode.window.showWarningMessage(
+        vscode.l10n.t('Delete account "{0}"?', picked.label),
+        { modal: true },
+        vscode.l10n.t('Delete')
+      );
+      if (confirmed !== vscode.l10n.t('Delete')) { return; }
+
+      const updated = current.filter(a => a.label !== picked.label);
+      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
+
+      // If active account was deleted, clear it
+      const active = getActiveAccount(this.context);
+      if (active?.label === picked.label) {
+        await setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL);
+      }
+      await this.refresh();
+    }
+
+    if (action.value === 'rename') {
+      const newLabel = await vscode.window.showInputBox({
+        title: vscode.l10n.t('Rename "{0}"', picked.label),
+        value: picked.label,
+        ignoreFocusOut: true,
+        validateInput: (v) => {
+          if (!v.trim()) { return vscode.l10n.t('Name cannot be empty'); }
+          if (v.trim() === DEFAULT_ACCOUNT_LABEL) { return vscode.l10n.t('That name is reserved'); }
+          if (v.trim() !== picked.label && current.find(a => a.label === v.trim())) {
+            return vscode.l10n.t('An account with that name already exists');
+          }
+          return null;
+        },
+      });
+      if (!newLabel || newLabel.trim() === picked.label) { return; }
+
+      const updated = current.map(a => a.label === picked.label ? { ...a, label: newLabel.trim() } : a);
+      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
+
+      // Update active account reference if it was renamed
+      const active = getActiveAccount(this.context);
+      if (active?.label === picked.label) {
+        await setActiveAccount(this.context, newLabel.trim());
+      }
+      await this.refresh();
     }
   }
 
@@ -391,8 +460,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       weeklyLabel:      vscode.l10n.t('Weekly (7d)'),
       opusLabel:        vscode.l10n.t('Opus (7d)'),
       accountLabel:      vscode.l10n.t('Account'),
-      accountDefault:    vscode.l10n.t('Default'),
       accountAdd:        vscode.l10n.t('Add account'),
+      accountManage:     vscode.l10n.t('Manage accounts'),
       accountHintTitle:      vscode.l10n.t('How to add another account'),
       accountHintMacIntro:   vscode.l10n.t('On macOS, tokens live in the Keychain. You need to extract each token while that account is active. Do this before switching:'),
       accountHintMacCmd:     vscode.l10n.t('Run in terminal to get the active token:'),
@@ -405,14 +474,13 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       accountHintFile2:      vscode.l10n.t('Then click + → Credentials file and select the copied file.'),
     };
 
-    // Build account selector options
-    const allAccounts = [
-      { label: i18n.accountDefault, value: DEFAULT_ACCOUNT_LABEL },
-      ...configuredAccounts.map(a => ({ label: a.label, value: a.label })),
-    ];
-    const accountOptionsHtml = allAccounts
-      .map(o => `<option value="${this.escapeHtml(o.value)}"${o.value === activeLabel ? ' selected' : ''}>${this.escapeHtml(o.label)}</option>`)
+    // Build account selector options — no Default, only configured accounts
+    const hasAccounts = configuredAccounts.length > 0;
+    const accountOptionsHtml = configuredAccounts
+      .map(a => `<option value="${this.escapeHtml(a.label)}"${a.label === activeLabel ? ' selected' : ''}>${this.escapeHtml(a.label)}</option>`)
       .join('');
+    // For the JS constant we still pass the list (used by accountsUpdated handler)
+    const allAccounts = configuredAccounts.map(a => ({ label: a.label, value: a.label }));
 
     return /* html */`<!DOCTYPE html>
 <html lang="en">
@@ -438,10 +506,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
   <div class="account-row">
     <span class="account-row-label">${i18n.accountLabel}</span>
-    <select class="account-select" id="accountSelect">
+    <select class="account-select${hasAccounts ? '' : ' hidden'}" id="accountSelect">
       ${accountOptionsHtml}
     </select>
     <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountAdd}">+</button>
+    <button class="account-add-btn${hasAccounts ? '' : ' hidden'}" id="manageAccountsBtn" title="${i18n.accountManage}">⋯</button>
   </div>
 
   <details class="account-hint">
@@ -522,6 +591,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   });
   document.getElementById('addAccountBtn').addEventListener('click', function () {
     vscode.postMessage({ type: 'addAccount' });
+  });
+  document.getElementById('manageAccountsBtn').addEventListener('click', function () {
+    vscode.postMessage({ type: 'manageAccounts' });
   });
 
   ${getUsageTabScript()}

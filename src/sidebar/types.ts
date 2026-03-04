@@ -49,8 +49,8 @@ export interface SidebarI18n {
   weeklyLabel: string;
   opusLabel: string;
   accountLabel: string;
-  accountDefault: string;
   accountAdd: string;
+  accountManage: string;
   accountHintTitle: string;
   accountHintMacIntro: string;
   accountHintMacCmd: string;

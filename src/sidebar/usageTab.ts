@@ -428,7 +428,11 @@ export function getUsageTabScript(): string {
 
     if (msg.type === 'accountsUpdated') {
       const sel = document.getElementById('accountSelect');
+      const manageBtn = document.getElementById('manageAccountsBtn');
       if (!sel) { return; }
+      const hasAccounts = msg.accounts.length > 0;
+      sel.classList.toggle('hidden', !hasAccounts);
+      if (manageBtn) { manageBtn.classList.toggle('hidden', !hasAccounts); }
       sel.innerHTML = msg.accounts.map(function (o) {
         const selected = o.value === msg.activeLabel ? ' selected' : '';
         return '<option value="' + o.value + '"' + selected + '>' + o.label + '</option>';
