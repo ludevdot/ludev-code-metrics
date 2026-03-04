@@ -201,6 +201,7 @@ export function getSubscriptionType(): string | null {
 /** Returns the access token for the given account, or auto-detects if null. */
 export function getAccessTokenForAccount(account: AccountConfig | null): string | null {
   if (account) { return account.token || null; }
+  if (isAccountManagementEnabled()) { return null; }
   return getAccessToken();
 }
 
@@ -241,6 +242,17 @@ export function getConfiguredAccounts(): AccountConfig[] {
     .get<AccountConfig[]>('accounts', []);
   const seen = new Set<string>();
   return raw.filter(a => a.email && !seen.has(a.email) && seen.add(a.email));
+}
+
+/**
+ * Returns true if the user has explicitly set the accounts setting (even to []).
+ * Used to distinguish "account management mode" (deleted all) from "never configured".
+ */
+export function isAccountManagementEnabled(): boolean {
+  const inspect = vscode.workspace
+    .getConfiguration('claudeUsage')
+    .inspect<AccountConfig[]>('accounts');
+  return inspect?.globalValue !== undefined;
 }
 
 /** Returns the active account from globalState, or null for the Default auto-detect account. */

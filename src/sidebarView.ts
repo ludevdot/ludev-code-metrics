@@ -128,10 +128,31 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       }
       if (msg.type === 'switchAccount') {
         void (async () => {
+          const previousEmail = getActiveAccount(this.context)?.email ?? null;
           await setActiveAccount(this.context, msg.label as string);
           this.lastData = null;
           this.onAccountChange?.();
           await this.refresh();
+          if ((msg.label as string) === previousEmail) { return; }
+          const openTerminal = vscode.l10n.t('Open terminal');
+          const action = await vscode.window.showInformationMessage(
+            vscode.l10n.t('Account switched. To also switch the Claude CLI, run `claude auth login`.'),
+            openTerminal
+          );
+          if (action === openTerminal) {
+            const terminal = vscode.window.createTerminal({
+              name: 'Claude Auth',
+              shellPath: 'claude',
+              shellArgs: ['auth', 'login'],
+            });
+            terminal.show();
+            const sub = vscode.window.onDidCloseTerminal(t => {
+              if (t === terminal) {
+                sub.dispose();
+                terminal.dispose();
+              }
+            });
+          }
         })();
       }
       if (msg.type === 'captureSession') {
