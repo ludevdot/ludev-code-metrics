@@ -800,8 +800,10 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     // Stale
     staleEl.classList.toggle('hidden', !stale);
 
-    // Card border colour
-    card.className = 'card' + (pct >= 95 ? ' error' : pct >= warn ? ' warn' : '');
+    // Card border colour (preserve 'hidden' class set by applyViewMode)
+    card.classList.remove('error', 'warn');
+    if (pct >= 95) card.classList.add('error');
+    else if (pct >= warn) card.classList.add('warn');
   }
 
   // Minimal formatTimeLeft mirrored from utils.ts
