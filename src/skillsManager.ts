@@ -1,4 +1,5 @@
 import * as https from 'https';
+import * as vscode from 'vscode';
 
 export interface SkillResult {
   name: string;
@@ -14,6 +15,25 @@ export interface SkillsSearchResponse {
 }
 
 const SKILLS_API_BASE = 'https://skills.sh/api/search';
+
+const CACHE_KEY = 'skillsCache';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+interface SkillsCache {
+  cachedAt: number;
+  skills: SkillResult[];
+}
+
+export function loadCache(context: vscode.ExtensionContext): SkillResult[] | null {
+  const cache = context.globalState.get<SkillsCache>(CACHE_KEY);
+  if (!cache) { return null; }
+  if (Date.now() - cache.cachedAt > CACHE_TTL_MS) { return null; }
+  return cache.skills;
+}
+
+export function saveCache(context: vscode.ExtensionContext, skills: SkillResult[]): void {
+  context.globalState.update(CACHE_KEY, { cachedAt: Date.now(), skills });
+}
 
 /**
  * Searches for skills using the skills.sh API.
