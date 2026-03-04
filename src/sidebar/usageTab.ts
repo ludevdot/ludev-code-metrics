@@ -82,6 +82,19 @@ export function getUsageTabStyles(): string {
       overflow: visible;
     }
 
+    /* ── Loading pulse ── */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+    .card.loading .ring-fill,
+    .card.loading .ring-pct,
+    .card.loading .bar-fill,
+    .card.loading .info-time,
+    .card.loading .sparkline {
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
     /* ── Stale banner ── */
     .stale-badge {
       display: inline-block;
@@ -413,6 +426,11 @@ export function getUsageTabScript(): string {
     const msg  = event.data;
     const warn = 80;
 
+    if (msg.type === 'loading') {
+      document.getElementById('session-card').classList.add('loading');
+      document.getElementById('weekly-card').classList.add('loading');
+    }
+
     if (msg.type === 'styleChanged') { setStyleRadio(msg.value); }
 
     if (msg.type === 'viewModeChanged') {
@@ -421,6 +439,8 @@ export function getUsageTabScript(): string {
     }
 
     if (msg.type === 'update') {
+      document.getElementById('session-card').classList.remove('loading');
+      document.getElementById('weekly-card').classList.remove('loading');
       document.getElementById('cards').classList.remove('hidden');
       document.getElementById('noAuth').classList.add('hidden');
       document.getElementById('planBadge').style.display = '';
@@ -446,6 +466,8 @@ export function getUsageTabScript(): string {
     }
 
     if (msg.type === 'noAuth') {
+      document.getElementById('session-card').classList.remove('loading');
+      document.getElementById('weekly-card').classList.remove('loading');
       document.getElementById('cards').classList.add('hidden');
       document.getElementById('noAuth').classList.remove('hidden');
       document.getElementById('planBadge').style.display = 'none';

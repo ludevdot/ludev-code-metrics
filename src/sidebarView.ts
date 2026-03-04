@@ -217,6 +217,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     }
     const subType = getSubscriptionTypeForAccount(account);
     this.post({ type: 'planUpdated', planLabel: formatPlanLabel(subType) });
+    this.post({ type: 'loading' });
     try {
       const data = await fetchUsage(token);
       this.lastData = data;
