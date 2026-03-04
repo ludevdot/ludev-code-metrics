@@ -72,6 +72,16 @@ export function getUsageTabStyles(): string {
       transition: width 0.5s ease, background 0.3s ease;
     }
 
+    /* ── Sparkline ── */
+    .sparkline {
+      width: 100%;
+      height: 22px;
+      margin-top: 6px;
+      display: block;
+      opacity: 0.55;
+      overflow: visible;
+    }
+
     /* ── Stale banner ── */
     .stale-badge {
       display: inline-block;
@@ -208,6 +218,9 @@ export function makeCard(
         <div class="bar-track">
           <div class="bar-fill" id="${id}-bar" style="width:0%"></div>
         </div>
+        <svg class="sparkline" id="${id}-spark" viewBox="0 0 100 22" preserveAspectRatio="none">
+          <polyline id="${id}-spark-line" fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" points=""/>
+        </svg>
       </div>
     </div>
   </div>`;
@@ -329,6 +342,23 @@ export function getUsageTabScript(): string {
     return I18N.mLeft.replace('{0}', m);
   }
 
+  function renderSparkline(id, points, color) {
+    const line = document.getElementById(id + '-spark-line');
+    if (!line) { return; }
+    if (points.length < 2) { line.setAttribute('points', ''); return; }
+    const w = 100, h = 22, pad = 2;
+    const minV = Math.min.apply(null, points);
+    const maxV = Math.max.apply(null, points);
+    const range = maxV - minV || 1;
+    const pts = points.map(function (v, i) {
+      var x = pad + (i / (points.length - 1)) * (w - 2 * pad);
+      var y = (h - pad) - ((v - minV) / range) * (h - 2 * pad);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    line.setAttribute('points', pts);
+    line.setAttribute('stroke', color);
+  }
+
   function updateOverview(sessionPct, weeklyPct, opusPct, hasOpus, stale, warn) {
     [['session', sessionPct], ['weekly', weeklyPct]].forEach(function ([key, pct]) {
       document.getElementById('ov-' + key + '-fill').style.width      = pct + '%';
@@ -396,12 +426,18 @@ export function getUsageTabScript(): string {
       document.getElementById('planBadge').style.display = '';
 
       const d = msg.data;
-      updateCard('session', Math.round(d.five_hour.utilization),  d.five_hour.resets_at,  msg.stale, warn);
-      updateCard('weekly',  Math.round(d.seven_day.utilization),  d.seven_day.resets_at,  msg.stale, warn);
+      const sessionPct = Math.round(d.five_hour.utilization);
+      const weeklyPct  = Math.round(d.seven_day.utilization);
+      updateCard('session', sessionPct, d.five_hour.resets_at, msg.stale, warn);
+      updateCard('weekly',  weeklyPct,  d.seven_day.resets_at, msg.stale, warn);
+      if (msg.history) {
+        renderSparkline('session', msg.history.session, colorForPct(sessionPct, warn));
+        renderSparkline('weekly',  msg.history.weekly,  colorForPct(weeklyPct,  warn));
+      }
       const hasOpus = d.seven_day_opus != null;
       updateOverview(
-        Math.round(d.five_hour.utilization),
-        Math.round(d.seven_day.utilization),
+        sessionPct,
+        weeklyPct,
         hasOpus ? Math.round(d.seven_day_opus.utilization) : 0,
         hasOpus, msg.stale, warn
       );

@@ -6,6 +6,7 @@ import {
 } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
 import { formatTimeLeft } from './utils';
+import { addSnapshot, getHistory } from './usageHistory';
 import * as fs from 'fs';
 import * as path from 'path';
 import { searchSkills, loadCache, saveCache, installSkill, fetchSkillMd, SkillResult } from './skillsManager';
@@ -219,7 +220,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     try {
       const data = await fetchUsage(token);
       this.lastData = data;
-      this.post({ type: 'update', data, stale: false });
+      addSnapshot(this.context, Math.round(data.five_hour.utilization), Math.round(data.seven_day.utilization));
+      const history = getHistory(this.context);
+      this.post({ type: 'update', data, stale: false, history });
       this.setBadge(false);
       this.onRefresh?.();
     } catch {
