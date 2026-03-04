@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
-import { getAccessToken } from './credentials';
+import {
+  getAccessTokenForAccount, getActiveAccount,
+  DEFAULT_ACCOUNT_LABEL,
+} from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
 import { BarStyle, buildProgressBar, formatTimeLeft, getColorByUsage, getDynamicIcon } from './utils';
 
@@ -72,27 +75,32 @@ export class UsageStatusBar {
   }
 
   async refresh(): Promise<void> {
-    const token = getAccessToken();
+    const account = getActiveAccount(this.context);
+    const token = getAccessTokenForAccount(account);
     if (!token) {
       this.showNoAuth();
       return;
     }
 
+    const accountLabel = (account && account.label !== DEFAULT_ACCOUNT_LABEL)
+      ? account.label
+      : null;
+
     try {
       const data = await fetchUsage(token);
       this.lastValidData = data;
       this.weeklyItem.show();
-      this.updateDisplay(data, false);
+      this.updateDisplay(data, false, accountLabel);
     } catch {
       if (this.lastValidData) {
-        this.updateDisplay(this.lastValidData, true);
+        this.updateDisplay(this.lastValidData, true, accountLabel);
       } else {
         this.showNoAuth();
       }
     }
   }
 
-  private updateDisplay(data: UsageLimits, stale: boolean): void {
+  private updateDisplay(data: UsageLimits, stale: boolean, accountLabel: string | null): void {
     const config = vscode.workspace.getConfiguration('claudeUsage');
     const barStyle = config.get<BarStyle>('barStyle', 'gradient');
     const warningThreshold = config.get<number>('warningThreshold', 80);
@@ -103,13 +111,14 @@ export class UsageStatusBar {
     const sessionTime = formatTimeLeft(data.five_hour.resets_at);
     const sessionTimeStr = sessionTime ? ` · ${sessionTime}` : '';
     this.sessionItem.text = this.formatText(
-      '$(clock)', sessionPct, vscode.l10n.t('Session'), sessionTimeStr, staleMark, barStyle, warningThreshold
+      '$(clock)', sessionPct, vscode.l10n.t('Session'), sessionTimeStr, staleMark, barStyle, warningThreshold, accountLabel
     );
     this.sessionItem.backgroundColor = getColorByUsage(sessionPct, warningThreshold);
     this.sessionItem.tooltip = this.buildTooltip(
       vscode.l10n.t('Session Usage (5h rolling window)'),
       sessionPct,
-      data.five_hour.resets_at
+      data.five_hour.resets_at,
+      accountLabel
     );
 
     // Weekly item
@@ -117,13 +126,14 @@ export class UsageStatusBar {
     const weeklyTime = formatTimeLeft(data.seven_day.resets_at);
     const weeklyTimeStr = weeklyTime ? ` · ${weeklyTime}` : '';
     this.weeklyItem.text = this.formatText(
-      '$(calendar)', weeklyPct, vscode.l10n.t('Weekly'), weeklyTimeStr, staleMark, barStyle, warningThreshold
+      '$(calendar)', weeklyPct, vscode.l10n.t('Weekly'), weeklyTimeStr, staleMark, barStyle, warningThreshold, accountLabel
     );
     this.weeklyItem.backgroundColor = getColorByUsage(weeklyPct, warningThreshold);
     this.weeklyItem.tooltip = this.buildTooltip(
       vscode.l10n.t('Weekly Usage (7-day rolling window)'),
       weeklyPct,
-      data.seven_day.resets_at
+      data.seven_day.resets_at,
+      accountLabel
     );
   }
 
@@ -134,34 +144,38 @@ export class UsageStatusBar {
     timeStr: string,
     staleMark: string,
     barStyle: BarStyle,
-    warningThreshold: number
+    warningThreshold: number,
+    accountLabel: string | null
   ): string {
     const gradientBar = ` ${buildProgressBar(pct, 10, 'gradient')}`;
     const blocksBar   = ` ${buildProgressBar(pct, 10, 'blocks')}`;
     const dynIcon     = getDynamicIcon(pct, warningThreshold);
+    const prefix      = accountLabel ? `[${accountLabel.slice(0, 10)}] ` : '';
 
     switch (barStyle) {
       case 'gradient':
-        return `${staticIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
+        return `${prefix}${staticIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
       case 'blocks':
-        return `${staticIcon}${blocksBar} ${label}: ${pct}%${timeStr}${staleMark}`;
+        return `${prefix}${staticIcon}${blocksBar} ${label}: ${pct}%${timeStr}${staleMark}`;
       case 'icon-only':
-        return `${dynIcon} ${label}: ${pct}%${timeStr}${staleMark}`;
+        return `${prefix}${dynIcon} ${label}: ${pct}%${timeStr}${staleMark}`;
       case 'icon+gradient':
-        return `${dynIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
+        return `${prefix}${dynIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
     }
   }
 
   private buildTooltip(
     label: string,
     percent: number,
-    resetsAt: string | null
+    resetsAt: string | null,
+    accountLabel: string | null
   ): vscode.MarkdownString {
     const resetLine = resetsAt
       ? vscode.l10n.t('Resets at: {0}', new Date(resetsAt).toLocaleString())
       : vscode.l10n.t('No reset time available');
+    const accountLine = accountLabel ? `\n\n_Account: ${accountLabel}_` : '';
     const md = new vscode.MarkdownString(
-      `**Claude Code — ${label}**\n\n${vscode.l10n.t('Utilization: {0}%', percent)}\n\n${resetLine}\n\n_${vscode.l10n.t('Click to refresh')}_`
+      `**Claude Code — ${label}**\n\n${vscode.l10n.t('Utilization: {0}%', percent)}\n\n${resetLine}${accountLine}\n\n_${vscode.l10n.t('Click to refresh')}_`
     );
     md.isTrusted = true;
     return md;
