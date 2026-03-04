@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 import { getAccessToken, getSubscriptionType } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
 import { formatTimeLeft } from './utils';
-import { searchSkills, loadCache, saveCache, SkillResult } from './skillsManager';
+import * as fs from 'fs';
+import * as path from 'path';
+import { searchSkills, loadCache, saveCache, installSkill, SkillResult } from './skillsManager';
 
 export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'claudeUsage.sidebar';
@@ -34,6 +36,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         if (cached) {
           this.post({ type: 'cacheResults', skills: cached, count: cached.length });
         }
+        this.post({ type: 'installedSkills', ids: this.getInstalledSkillIds() });
       }
       if (msg.type === 'refresh') {
         void this.refresh();
@@ -60,6 +63,31 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
             await vscode.workspace
               .getConfiguration('claudeUsage')
               .update('manualToken', token.trim(), vscode.ConfigurationTarget.Global);
+          }
+        })();
+      }
+      if (msg.type === 'selectSkill') {
+        void (async () => {
+          const skill = msg.skill as SkillResult;
+          const [owner, repo] = skill.source.split('/');
+          const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${skill.skillId}/SKILL.md`;
+          try {
+            const res = await fetch(rawUrl);
+            const content = res.ok ? await res.text() : '(preview unavailable)';
+            this.post({ type: 'skillPreview', skill, content });
+          } catch {
+            this.post({ type: 'skillPreview', skill, content: '(preview unavailable)' });
+          }
+        })();
+      }
+      if (msg.type === 'installSkill') {
+        void (async () => {
+          const skill = msg.skill as SkillResult;
+          try {
+            await installSkill(skill, this.context);
+            this.post({ type: 'installSuccess', skillId: skill.skillId });
+          } catch (err) {
+            this.post({ type: 'installError', error: String(err) });
           }
         })();
       }
@@ -173,6 +201,18 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     this.startPolling();
   }
 
+  private getInstalledSkillIds(): string[] {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceRoot) { return []; }
+    const lockPath = path.join(workspaceRoot, 'skills-lock.json');
+    if (!fs.existsSync(lockPath)) { return []; }
+    try {
+      return Object.keys(JSON.parse(fs.readFileSync(lockPath, 'utf-8')));
+    } catch {
+      return [];
+    }
+  }
+
   dispose(): void {
     if (this.pollingInterval !== undefined) {
       clearInterval(this.pollingInterval);
@@ -234,6 +274,12 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       skillsNoResults:vscode.l10n.t('No results'),
       skillsRefine:   vscode.l10n.t('Refine your search to see more results'),
       skillsInstalls: vscode.l10n.t('installs'),
+      skillsInstall:  vscode.l10n.t('Install'),
+      skillsInstalling: vscode.l10n.t('Installing...'),
+      skillsCancel:   vscode.l10n.t('Cancel'),
+      skillsInstalled: vscode.l10n.t('Installed'),
+      skillsInstallOk: vscode.l10n.t('Skill installed successfully'),
+      skillsInstallErr: vscode.l10n.t('Error:'),
       sessionLabel:   vscode.l10n.t('Session (5h)'),
       weeklyLabel:    vscode.l10n.t('Weekly (7d)'),
       opusLabel:      vscode.l10n.t('Opus (7d)'),
@@ -574,6 +620,49 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       padding: 4px 2px 0;
     }
 
+    /* ── Skill preview panel ── */
+    .skill-preview {
+      margin-top: 8px;
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .skill-preview-header {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 8px 10px 6px;
+      background: var(--vscode-editor-background);
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
+    }
+    .skill-preview-name { font-size: 12px; font-weight: 600; }
+    .skill-preview-source { font-size: 10px; opacity: 0.5; }
+    .skill-preview-content {
+      font-size: 10px;
+      font-family: var(--vscode-editor-font-family, monospace);
+      line-height: 1.5;
+      padding: 8px 10px;
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.06));
+    }
+    .skill-preview-actions {
+      display: flex;
+      gap: 6px;
+      padding: 8px 10px;
+      background: var(--vscode-editor-background);
+      border-top: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
+    }
+    .skill-preview-feedback {
+      padding: 4px 10px 6px;
+      font-size: 11px;
+      background: var(--vscode-editor-background);
+    }
+    .skill-preview-feedback.success { color: var(--vscode-charts-green, #4caf74); }
+    .skill-preview-feedback.error   { color: var(--vscode-errorForeground, #f44); }
+
     /* ── Helpers ── */
     .hidden { display: none !important; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -666,6 +755,18 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       <li class="skills-placeholder">${i18n.skillsEmpty}</li>
     </ul>
     <p class="skills-refine hidden" id="skillsRefine">${i18n.skillsRefine}</p>
+    <div class="skill-preview hidden" id="skillPreview">
+      <div class="skill-preview-header">
+        <span class="skill-preview-name" id="previewName"></span>
+        <span class="skill-preview-source" id="previewSource"></span>
+      </div>
+      <pre class="skill-preview-content" id="previewContent"></pre>
+      <div class="skill-preview-actions">
+        <button class="action-btn action-btn--primary" id="btnInstall">${i18n.skillsInstall}</button>
+        <button class="action-btn action-btn--secondary" id="btnCancel">${i18n.skillsCancel}</button>
+      </div>
+      <div class="skill-preview-feedback hidden" id="installFeedback"></div>
+    </div>
   </div>
 
   <div class="footer" id="footer"></div>
@@ -842,12 +943,21 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     }
   });
 
-  // ── Skills search ──
+  // ── Skills search & preview ──
   (function () {
-    const searchInput = document.getElementById('skillsSearch');
-    const skillsList  = document.getElementById('skillsList');
-    const refineWarn  = document.getElementById('skillsRefine');
+    const searchInput  = document.getElementById('skillsSearch');
+    const skillsList   = document.getElementById('skillsList');
+    const refineWarn   = document.getElementById('skillsRefine');
+    const skillPreview = document.getElementById('skillPreview');
+    const previewName  = document.getElementById('previewName');
+    const previewSrc   = document.getElementById('previewSource');
+    const previewCont  = document.getElementById('previewContent');
+    const btnInstall   = document.getElementById('btnInstall');
+    const btnCancel    = document.getElementById('btnCancel');
+    const feedback     = document.getElementById('installFeedback');
     let debounceTimer;
+    let selectedSkill  = null;
+    let installedIds   = [];
 
     function renderSkills(skills, count) {
       skillsList.innerHTML = '';
@@ -863,7 +973,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
       skills.forEach(function (skill) {
         const li = document.createElement('li');
-        li.className = 'skill-item';
+        li.className = 'skill-item' + (installedIds.includes(skill.skillId) ? ' installed' : '');
         li.dataset.skillId = skill.skillId;
         li.innerHTML =
           '<span class="skill-name">' + skill.name + '</span>' +
@@ -889,10 +999,58 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       }, 400);
     });
 
+    function showPreview(skill, content) {
+      selectedSkill = skill;
+      previewName.textContent = skill.name;
+      previewSrc.textContent  = skill.source;
+      previewCont.textContent = content;
+      feedback.className = 'skill-preview-feedback hidden';
+      feedback.textContent = '';
+      btnInstall.disabled = false;
+      btnInstall.textContent = I18N.skillsInstall;
+      skillPreview.classList.remove('hidden');
+    }
+
+    function hidePreview() {
+      skillPreview.classList.add('hidden');
+      selectedSkill = null;
+    }
+
+    btnInstall.addEventListener('click', function () {
+      if (!selectedSkill) { return; }
+      btnInstall.disabled = true;
+      btnInstall.textContent = I18N.skillsInstalling;
+      feedback.className = 'skill-preview-feedback hidden';
+      vscode.postMessage({ type: 'installSkill', skill: selectedSkill });
+    });
+
+    btnCancel.addEventListener('click', hidePreview);
+
     window.addEventListener('message', function (event) {
       const msg = event.data;
       if (msg.type === 'searchResults' || msg.type === 'cacheResults') {
         renderSkills(msg.skills, msg.count);
+      }
+      if (msg.type === 'installedSkills') {
+        installedIds = msg.ids;
+      }
+      if (msg.type === 'skillPreview') {
+        showPreview(msg.skill, msg.content);
+      }
+      if (msg.type === 'installSuccess') {
+        if (!installedIds.includes(msg.skillId)) { installedIds.push(msg.skillId); }
+        const item = skillsList.querySelector('[data-skill-id="' + msg.skillId + '"]');
+        if (item) { item.classList.add('installed'); }
+        feedback.textContent = I18N.skillsInstallOk;
+        feedback.className = 'skill-preview-feedback success';
+        btnInstall.textContent = I18N.skillsInstalled;
+        setTimeout(hidePreview, 1500);
+      }
+      if (msg.type === 'installError') {
+        feedback.textContent = I18N.skillsInstallErr + ' ' + msg.error;
+        feedback.className = 'skill-preview-feedback error';
+        btnInstall.disabled = false;
+        btnInstall.textContent = I18N.skillsInstall;
       }
     });
   }());
