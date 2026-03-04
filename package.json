@@ -121,6 +121,31 @@
           ],
           "default": "extended",
           "description": "%config.viewMode.description%"
+        },
+        "claudeUsage.accounts": {
+          "type": "array",
+          "default": [],
+          "description": "%config.accounts.description%",
+          "items": {
+            "type": "object",
+            "required": [
+              "label"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Display name for this account. The value __default__ is reserved."
+              },
+              "token": {
+                "type": "string",
+                "description": "Raw OAuth access token. Stored in settings.json — do not commit to version control."
+              },
+              "credentialsPath": {
+                "type": "string",
+                "description": "Path to a Claude Code credentials JSON file for this account."
+              }
+            }
+          }
         }
       }
     }

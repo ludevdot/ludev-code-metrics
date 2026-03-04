@@ -15,5 +15,6 @@
   "config.barStyle.iconOnly": "Solo icona dinamica, nessuna barra — $(pass/warning/error) Sessione: 45% · 2h rimanenti",
   "config.barStyle.iconGradient": "Icona dinamica con barra sfumata  — $(pass) ▰▰▰▰▰▱▱▱▱▱ Sessione: 45% · 2h rimanenti",
   "config.warningThreshold.description": "Percentuale di utilizzo oltre la quale si attiva il colore di avviso",
-  "config.viewMode.description": "Modalità vista del pannello: 'extended' mostra le schede Sessione e Settimanale, 'compact' mostra solo la panoramica"
+  "config.viewMode.description": "Modalità vista del pannello: 'extended' mostra le schede Sessione e Settimanale, 'compact' mostra solo la panoramica",
+  "config.accounts.description": "Account con nome per il supporto multi-account. Ogni voce richiede un'etichetta e token o credentialsPath. L'etichetta '__default__' è riservata per il rilevamento automatico."
 }

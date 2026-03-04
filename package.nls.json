@@ -15,5 +15,6 @@
   "config.barStyle.iconOnly": "Dynamic icon only, no bar         — $(pass/warning/error) Session: 45% · 2h left",
   "config.barStyle.iconGradient": "Dynamic icon with gradient bar    — $(pass) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left",
   "config.warningThreshold.description": "Usage percentage at which the warning color activates",
-  "config.viewMode.description": "Sidebar view mode: 'extended' shows Session & Weekly cards, 'compact' shows Overview only"
+  "config.viewMode.description": "Sidebar view mode: 'extended' shows Session & Weekly cards, 'compact' shows Overview only",
+  "config.accounts.description": "Named accounts for multi-account support. Each entry requires a label plus either token or credentialsPath. The label '__default__' is reserved for auto-detection."
 }

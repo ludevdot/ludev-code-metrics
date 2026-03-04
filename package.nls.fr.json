@@ -15,5 +15,6 @@
   "config.barStyle.iconOnly": "Icône dynamique seule, sans barre      — $(pass/warning/error) Session : 45% · 2h restantes",
   "config.barStyle.iconGradient": "Icône dynamique avec barre dégradée   — $(pass) ▰▰▰▰▰▱▱▱▱▱ Session : 45% · 2h restantes",
   "config.warningThreshold.description": "Pourcentage d'utilisation à partir duquel la couleur d'avertissement s'active",
-  "config.viewMode.description": "Mode d'affichage du panneau : 'extended' affiche les cartes Session & Hebdomadaire, 'compact' affiche uniquement la vue d'ensemble"
+  "config.viewMode.description": "Mode d'affichage du panneau : 'extended' affiche les cartes Session & Hebdomadaire, 'compact' affiche uniquement la vue d'ensemble",
+  "config.accounts.description": "Comptes nommés pour la prise en charge multi-comptes. Chaque entrée nécessite un label et token ou credentialsPath. Le label '__default__' est réservé pour la détection automatique."
 }
