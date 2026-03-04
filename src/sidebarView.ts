@@ -655,9 +655,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   </div>
 
   <div id="cards">
-    ${makeOverviewCard(i18n)}
-    ${makeCard('session', i18n.session, i18n.session5h, i18n.stale, i18n.used)}
-    ${makeCard('weekly',  i18n.weekly,  i18n.weekly7d,  i18n.stale, i18n.used)}
+    ${makeOverviewCard(i18n, currentViewMode === 'compact')}
+    ${makeCard('session', i18n.session, i18n.session5h, i18n.stale, i18n.used, currentViewMode === 'compact')}
+    ${makeCard('weekly',  i18n.weekly,  i18n.weekly7d,  i18n.stale, i18n.used, currentViewMode === 'compact')}
   </div>
 
   <div id="noAuth" class="no-auth hidden">
@@ -1052,9 +1052,9 @@ function formatPlanLabel(subscriptionType: string | null): string {
   return map[subscriptionType] ?? subscriptionType;
 }
 
-function makeOverviewCard(i18n: { overview: string; sessionLabel: string; weeklyLabel: string; opusLabel: string; stale: string }): string {
+function makeOverviewCard(i18n: { overview: string; sessionLabel: string; weeklyLabel: string; opusLabel: string; stale: string }, isCompact: boolean): string {
   return /* html */`
-  <div class="card" id="overview-card">
+  <div class="card${isCompact ? '' : ' hidden'}" id="overview-card">
     <div class="card-header">
       <span class="card-title">${i18n.overview}</span>
       <span class="stale-badge hidden" id="overview-stale">${i18n.stale}</span>
@@ -1077,9 +1077,9 @@ function makeOverviewCard(i18n: { overview: string; sessionLabel: string; weekly
   </div>`;
 }
 
-function makeCard(id: string, title: string, sub: string, staleLabel: string, usedLabel: string): string {
+function makeCard(id: string, title: string, sub: string, staleLabel: string, usedLabel: string, isCompact: boolean): string {
   return /* html */`
-  <div class="card" id="${id}-card">
+  <div class="card${isCompact ? ' hidden' : ''}" id="${id}-card">
     <div class="card-header">
       <span class="card-title">${title}</span>
       <span class="card-sub">${sub}</span>
