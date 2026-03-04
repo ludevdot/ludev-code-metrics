@@ -2,7 +2,7 @@
   "name": "claude-usage-indicator",
   "displayName": "Claude Code Usage",
   "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "publisher": "claude-usage",
   "license": "MIT",
   "repository": {
@@ -21,7 +21,7 @@
     "status bar",
     "ai"
   ],
-  "icon": "media/marketplace-icon.png",
+  "icon": "media/test2.png",
   "engines": {
     "vscode": "^1.85.0"
   },
