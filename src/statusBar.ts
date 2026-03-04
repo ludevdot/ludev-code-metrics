@@ -12,6 +12,8 @@ export class UsageStatusBar {
   private pollingInterval: ReturnType<typeof setInterval> | undefined;
   private lastValidData: UsageLimits | null = null;
   private readonly disposables: vscode.Disposable[] = [];
+  private sessionNotified = false;
+  private weeklyNotified = false;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.sessionItem = vscode.window.createStatusBarItem(
@@ -102,6 +104,40 @@ export class UsageStatusBar {
     }
   }
 
+  private async checkThresholdNotifications(sessionPct: number, weeklyPct: number, warningThreshold: number): Promise<void> {
+    const showUsage = vscode.l10n.t('View usage');
+
+    if (sessionPct >= warningThreshold) {
+      if (!this.sessionNotified) {
+        this.sessionNotified = true;
+        const action = await vscode.window.showWarningMessage(
+          vscode.l10n.t('Claude Code session usage is at {0}%', sessionPct),
+          showUsage
+        );
+        if (action === showUsage) {
+          void vscode.commands.executeCommand('claudeUsage.openSidebar');
+        }
+      }
+    } else {
+      this.sessionNotified = false;
+    }
+
+    if (weeklyPct >= warningThreshold) {
+      if (!this.weeklyNotified) {
+        this.weeklyNotified = true;
+        const action = await vscode.window.showWarningMessage(
+          vscode.l10n.t('Claude Code weekly usage is at {0}%', weeklyPct),
+          showUsage
+        );
+        if (action === showUsage) {
+          void vscode.commands.executeCommand('claudeUsage.openSidebar');
+        }
+      }
+    } else {
+      this.weeklyNotified = false;
+    }
+  }
+
   private updateDisplay(data: UsageLimits, stale: boolean, accountLabel: string | null): void {
     const config = vscode.workspace.getConfiguration('claudeUsage');
     const barStyle = config.get<BarStyle>('barStyle', 'gradient');
@@ -137,6 +173,8 @@ export class UsageStatusBar {
       data.seven_day.resets_at,
       accountLabel
     );
+
+    void this.checkThresholdNotifications(sessionPct, weeklyPct, warningThreshold);
   }
 
   private formatText(
