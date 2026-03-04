@@ -35,15 +35,15 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   ): void {
     this.view = webviewView;
 
-    if (!getAccessTokenForAccount(getActiveAccount(this.context))) {
-      webviewView.badge = { value: 1, tooltip: vscode.l10n.t('No credentials found') };
-    }
-
     webviewView.webview.options = { enableScripts: true };
     webviewView.webview.html = this.getHtml(webviewView.webview);
 
     webviewView.webview.onDidReceiveMessage((msg) => {
       if (msg.type === 'ready') {
+        if (this.lastData) {
+          const history = getHistory(this.context);
+          this.post({ type: 'update', data: this.lastData, stale: true, history });
+        }
         void this.refresh();
         const cached = loadCache(this.context);
         if (cached) {
@@ -236,11 +236,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private setBadge(active: boolean): void {
+  private setBadge(_active: boolean): void {
     if (!this.view) { return; }
-    this.view.badge = active
-      ? { value: 1, tooltip: vscode.l10n.t('No credentials found') }
-      : undefined;
+    this.view.badge = undefined;
   }
 
   private post(msg: unknown): void {
