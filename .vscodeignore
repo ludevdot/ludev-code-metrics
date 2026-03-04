@@ -24,3 +24,10 @@ claude-usage-vscode-extension.md
 PLAN.md
 .changeset/**
 scripts/**
+.claude/**
+.agents/**
+.linear/**
+.git/**
+.mcp.json
+skills-lock.json
+pnpm-lock.yaml

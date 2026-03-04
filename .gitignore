@@ -23,4 +23,7 @@ Thumbs.db
 # Claude Code local settings
 .claude/settings.local.json
 
+# External repos for reference (not part of this project)
+copilot-mcp-main/
+
 

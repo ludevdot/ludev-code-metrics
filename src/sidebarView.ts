@@ -306,7 +306,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       border-radius: 4px;
       transition: opacity 0.15s, background 0.15s;
     }
-    .refresh-btn:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground); }
+    .refresh-btn:hover { opacity: 1; }
     .refresh-btn.spinning { animation: spin 0.7s linear infinite; }
 
     /* ── Cards ── */
