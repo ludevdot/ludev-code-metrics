@@ -124,12 +124,22 @@ export async function installSkill(
   }
 }
 
-// Candidate paths in order of prevalence across public skill repos
+// Candidate paths derived from copilot-mcp's discoverSkills priority list.
+// Order matters: most common locations first to minimise HTTP round-trips.
 const SKILL_PATH_CANDIDATES = [
-  (skillId: string) => `skills/${skillId}/SKILL.md`,
-  (skillId: string) => `${skillId}/SKILL.md`,
-  (skillId: string) => `skills/${skillId}.md`,
-  (skillId: string) => `${skillId}.md`,
+  (id: string) => `skills/${id}/SKILL.md`,
+  (id: string) => `${id}/SKILL.md`,
+  (id: string) => `.claude/skills/${id}/SKILL.md`,
+  (id: string) => `.cursor/skills/${id}/SKILL.md`,
+  (id: string) => `.github/skills/${id}/SKILL.md`,
+  (id: string) => `.windsurf/skills/${id}/SKILL.md`,
+  (id: string) => `.roo/skills/${id}/SKILL.md`,
+  (id: string) => `.cline/skills/${id}/SKILL.md`,
+  (id: string) => `.continue/skills/${id}/SKILL.md`,
+  (id: string) => `.goose/skills/${id}/SKILL.md`,
+  (id: string) => `skills/.curated/${id}/SKILL.md`,
+  (id: string) => `skills/.experimental/${id}/SKILL.md`,
+  (id: string) => `${id}.md`,
 ];
 
 export async function fetchSkillMd(owner: string, repo: string, skillId: string): Promise<string> {
