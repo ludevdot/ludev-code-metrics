@@ -234,6 +234,15 @@ export function getSharedStyles(): string {
       opacity: 0.9;
       word-break: break-all;
     }
+    .account-hint-substep {
+      padding-left: 4px;
+      border-left: 2px solid var(--vscode-focusBorder, rgba(0,127,212,0.4));
+    }
+    .account-hint-sublabel {
+      font-weight: 600;
+      opacity: 0.6 !important;
+      font-size: 10px !important;
+    }
     .account-hint-tip {
       font-style: italic;
       opacity: 0.5 !important;

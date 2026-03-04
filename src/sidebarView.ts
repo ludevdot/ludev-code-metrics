@@ -393,12 +393,16 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       accountLabel:      vscode.l10n.t('Account'),
       accountDefault:    vscode.l10n.t('Default'),
       accountAdd:        vscode.l10n.t('Add account'),
-      accountHintTitle:  vscode.l10n.t('How to add another account'),
-      accountHintMac1:   vscode.l10n.t('On macOS, credentials live in the Keychain. While logged in as the other account, run this in your terminal to get its token:'),
-      accountHintMac2:   vscode.l10n.t('Then click + → Token and paste the result.'),
-      accountHintMac3:   vscode.l10n.t('Tip: log in with the second account via the Claude Code CLI, copy the token, then log back in to your main account.'),
-      accountHintFile1:  vscode.l10n.t('On Linux/Windows, copy the credentials file while logged in as the other account:'),
-      accountHintFile2:  vscode.l10n.t('Then click + → Credentials file and select the copied file.'),
+      accountHintTitle:      vscode.l10n.t('How to add another account'),
+      accountHintMacIntro:   vscode.l10n.t('On macOS, tokens live in the Keychain. You need to extract each token while that account is active. Do this before switching:'),
+      accountHintMacCmd:     vscode.l10n.t('Run in terminal to get the active token:'),
+      accountHintMacStep1:   vscode.l10n.t('1. While logged in as account B, run the command and copy the output.'),
+      accountHintMacStep2:   vscode.l10n.t('2. Click + → Token → paste it → name it (e.g. "Work").'),
+      accountHintMacStep3:   vscode.l10n.t('3. Log back in as your main account (claude auth login).'),
+      accountHintMacStep4:   vscode.l10n.t('4. "Default" will resume pointing to your main account.'),
+      accountHintMacWarning: vscode.l10n.t('⚠ Token-only accounts do not show plan type.'),
+      accountHintFile1:      vscode.l10n.t('On Linux/Windows, copy the credentials file while logged in as the other account:'),
+      accountHintFile2:      vscode.l10n.t('Then click + → Credentials file and select the copied file.'),
     };
 
     // Build account selector options
@@ -444,10 +448,14 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     <summary class="account-hint-summary">${i18n.accountHintTitle}</summary>
     <div class="account-hint-body">
       ${process.platform === 'darwin' ? `
-      <p>${i18n.accountHintMac1}</p>
+      <p>${i18n.accountHintMacIntro}</p>
+      <p class="account-hint-substep">${i18n.accountHintMacStep1}</p>
+      <p class="account-hint-sublabel">${i18n.accountHintMacCmd}</p>
       <code>security find-generic-password -s "Claude Code-credentials" -w | python3 -c "import sys,json; print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])"</code>
-      <p>${i18n.accountHintMac2}</p>
-      <p class="account-hint-tip">${i18n.accountHintMac3}</p>
+      <p class="account-hint-substep">${i18n.accountHintMacStep2}</p>
+      <p class="account-hint-substep">${i18n.accountHintMacStep3}</p>
+      <p class="account-hint-substep">${i18n.accountHintMacStep4}</p>
+      <p class="account-hint-tip">${i18n.accountHintMacWarning}</p>
       ` : `
       <p>${i18n.accountHintFile1}</p>
       <code>~/.claude/.credentials.json</code>

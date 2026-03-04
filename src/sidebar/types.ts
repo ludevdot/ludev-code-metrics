@@ -52,9 +52,13 @@ export interface SidebarI18n {
   accountDefault: string;
   accountAdd: string;
   accountHintTitle: string;
-  accountHintMac1: string;
-  accountHintMac2: string;
-  accountHintMac3: string;
+  accountHintMacIntro: string;
+  accountHintMacCmd: string;
+  accountHintMacStep1: string;
+  accountHintMacStep2: string;
+  accountHintMacStep3: string;
+  accountHintMacStep4: string;
+  accountHintMacWarning: string;
   accountHintFile1: string;
   accountHintFile2: string;
 }
