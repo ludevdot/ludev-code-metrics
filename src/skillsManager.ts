@@ -1,17 +1,21 @@
+import * as crypto from 'crypto';
+import * as fs from 'fs';
 import * as https from 'https';
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 export interface SkillResult {
+  id: string;        // "owner/repo/skillId"
+  skillId: string;   // "skill-name"
   name: string;
-  description: string;
-  url: string;
-  author?: string;
-  tags?: string[];
+  installs: number;
+  source: string;    // "owner/repo"
 }
 
 export interface SkillsSearchResponse {
-  results: SkillResult[];
-  total: number;
+  query: string;
+  skills: SkillResult[];
+  count: number;
 }
 
 const SKILLS_API_BASE = 'https://skills.sh/api/search';
@@ -74,6 +78,71 @@ export function searchSkills(query: string): Promise<SkillsSearchResponse> {
       req.destroy(new Error('Request timed out'));
     });
 
+    req.end();
+  });
+}
+
+/**
+ * Downloads a skill's SKILL.md from GitHub raw and installs it into
+ * .claude/skills/<skillId>/SKILL.md, then updates skills-lock.json.
+ */
+export async function installSkill(
+  skill: SkillResult,
+  context: vscode.ExtensionContext
+): Promise<void> {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!workspaceRoot) {
+    throw new Error('No workspace folder open');
+  }
+
+  const [owner, repo] = skill.source.split('/');
+  const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${skill.skillId}/SKILL.md`;
+
+  const content = await fetchText(rawUrl);
+
+  // Write SKILL.md
+  const skillDir = path.join(workspaceRoot, '.claude', 'skills', skill.skillId);
+  fs.mkdirSync(skillDir, { recursive: true });
+  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), content, 'utf-8');
+
+  // Update skills-lock.json
+  const lockPath = path.join(workspaceRoot, 'skills-lock.json');
+  const lock: Record<string, unknown> = fs.existsSync(lockPath)
+    ? JSON.parse(fs.readFileSync(lockPath, 'utf-8'))
+    : {};
+
+  lock[skill.skillId] = {
+    source: skill.source,
+    sourceType: 'github',
+    computedHash: crypto.createHash('sha256').update(content).digest('hex'),
+  };
+
+  fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2), 'utf-8');
+
+  // Update cache to include the newly installed skill
+  const cached = loadCache(context) ?? [];
+  if (!cached.find(s => s.skillId === skill.skillId)) {
+    saveCache(context, [...cached, skill]);
+  }
+}
+
+function fetchText(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, { method: 'GET' }, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        resolve(fetchText(res.headers.location!));
+        return;
+      }
+      if (res.statusCode !== 200) {
+        reject(new Error(`HTTP ${res.statusCode} fetching ${url}`));
+        return;
+      }
+      let data = '';
+      res.on('data', (chunk: string) => { data += chunk; });
+      res.on('end', () => resolve(data));
+    });
+    req.on('error', reject);
+    req.setTimeout(10_000, () => req.destroy(new Error('Request timed out')));
     req.end();
   });
 }
