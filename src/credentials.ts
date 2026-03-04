@@ -4,6 +4,14 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
+export const DEFAULT_ACCOUNT_LABEL = '__default__';
+
+export interface AccountConfig {
+  label: string;
+  token?: string;
+  credentialsPath?: string;
+}
+
 interface ClaudeCredentials {
   claudeAiOauth: {
     accessToken: string;
@@ -188,4 +196,54 @@ export function getSubscriptionType(): string | null {
   }
 
   return null;
+}
+
+/**
+ * Returns the access token for the given account.
+ * - token field set  → use it directly
+ * - credentialsPath set → read from file
+ * - null / DEFAULT_ACCOUNT_LABEL → fall back to auto-detect
+ */
+export function getAccessTokenForAccount(account: AccountConfig | null): string | null {
+  if (account && account.label !== DEFAULT_ACCOUNT_LABEL) {
+    if (account.token) { return account.token.trim() || null; }
+    if (account.credentialsPath) { return readTokenFromFile(account.credentialsPath); }
+  }
+  return getAccessToken();
+}
+
+/**
+ * Returns the subscription type for the given account.
+ * Token-only accounts return null (no subscription info available).
+ */
+export function getSubscriptionTypeForAccount(account: AccountConfig | null): string | null {
+  if (account && account.label !== DEFAULT_ACCOUNT_LABEL) {
+    if (account.token) { return null; }
+    if (account.credentialsPath) {
+      return readCredentialsFromFile(account.credentialsPath)?.claudeAiOauth.subscriptionType ?? null;
+    }
+  }
+  return getSubscriptionType();
+}
+
+/** Returns the configured accounts from settings. Deduplicates by label. */
+export function getConfiguredAccounts(): AccountConfig[] {
+  const raw = vscode.workspace
+    .getConfiguration('claudeUsage')
+    .get<AccountConfig[]>('accounts', []);
+  const seen = new Set<string>();
+  return raw.filter(a => a.label && !seen.has(a.label) && seen.add(a.label));
+}
+
+/** Returns the active account from globalState, or null for the Default auto-detect account. */
+export function getActiveAccount(context: vscode.ExtensionContext): AccountConfig | null {
+  const label = context.globalState.get<string>('claudeUsage.activeAccount', DEFAULT_ACCOUNT_LABEL);
+  if (!label || label === DEFAULT_ACCOUNT_LABEL) { return null; }
+  const accounts = getConfiguredAccounts();
+  return accounts.find(a => a.label === label) ?? null;
+}
+
+/** Persists the active account label to globalState. */
+export async function setActiveAccount(context: vscode.ExtensionContext, label: string): Promise<void> {
+  await context.globalState.update('claudeUsage.activeAccount', label);
 }
