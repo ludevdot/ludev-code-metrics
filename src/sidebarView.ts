@@ -390,9 +390,13 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       sessionLabel:     vscode.l10n.t('Session (5h)'),
       weeklyLabel:      vscode.l10n.t('Weekly (7d)'),
       opusLabel:        vscode.l10n.t('Opus (7d)'),
-      accountLabel:     vscode.l10n.t('Account'),
-      accountDefault:   vscode.l10n.t('Default'),
-      accountAdd:       vscode.l10n.t('Add account'),
+      accountLabel:      vscode.l10n.t('Account'),
+      accountDefault:    vscode.l10n.t('Default'),
+      accountAdd:        vscode.l10n.t('Add account'),
+      accountHintTitle:  vscode.l10n.t('How to add another account'),
+      accountHintStep1:  vscode.l10n.t('While logged in as the account you want to add, copy the credentials file:'),
+      accountHintStep2file: vscode.l10n.t('Click + → "Credentials file" → select the copied file.'),
+      accountHintStep2token: vscode.l10n.t('Or click + → "Token" → paste the accessToken value from that file.'),
     };
 
     // Build account selector options
@@ -433,6 +437,16 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     </select>
     <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountAdd}">+</button>
   </div>
+
+  <details class="account-hint">
+    <summary class="account-hint-summary">${i18n.accountHintTitle}</summary>
+    <div class="account-hint-body">
+      <p>${i18n.accountHintStep1}</p>
+      <code>~/.claude/.credentials.json</code>
+      <p>${i18n.accountHintStep2file}</p>
+      <p>${i18n.accountHintStep2token}</p>
+    </div>
+  </details>
 
   <div class="tab-bar">
     <button class="tab active" data-tab="usage">${i18n.tabUsage}</button>

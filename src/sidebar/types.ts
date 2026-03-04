@@ -51,4 +51,8 @@ export interface SidebarI18n {
   accountLabel: string;
   accountDefault: string;
   accountAdd: string;
+  accountHintTitle: string;
+  accountHintStep1: string;
+  accountHintStep2file: string;
+  accountHintStep2token: string;
 }

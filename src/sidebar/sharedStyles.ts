@@ -187,6 +187,53 @@ export function getSharedStyles(): string {
     }
     .account-add-btn:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.1)); }
 
+    /* ── Account hint ── */
+    .account-hint {
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+    }
+    .account-hint-summary {
+      font-size: 10px;
+      opacity: 0.55;
+      cursor: pointer;
+      padding: 5px 8px;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      user-select: none;
+    }
+    .account-hint-summary::-webkit-details-marker { display: none; }
+    .account-hint-summary::before {
+      content: '▶';
+      font-size: 8px;
+      transition: transform 0.15s;
+      display: inline-block;
+    }
+    details[open] .account-hint-summary::before { transform: rotate(90deg); }
+    .account-hint-summary:hover { opacity: 0.85; }
+    .account-hint-body {
+      padding: 0 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .account-hint-body p {
+      font-size: 11px;
+      opacity: 0.7;
+      line-height: 1.45;
+    }
+    .account-hint-body code {
+      font-family: var(--vscode-editor-font-family, monospace);
+      font-size: 10px;
+      background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.15));
+      border-radius: 3px;
+      padding: 3px 6px;
+      display: block;
+      opacity: 0.9;
+    }
+
     /* ── Helpers ── */
     .hidden { display: none !important; }
     @keyframes spin { to { transform: rotate(360deg); } }
