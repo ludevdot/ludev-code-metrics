@@ -11,7 +11,7 @@ export function activate(context: vscode.ExtensionContext): void {
   void statusBar.start();
 
   sidebarProvider = new UsageSidebarProvider(context);
-  sidebarProvider.onAccountSwitch = () => { void statusBar?.refresh(); };
+  sidebarProvider.onRefresh = () => { void statusBar?.refresh(); };
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       UsageSidebarProvider.viewType,

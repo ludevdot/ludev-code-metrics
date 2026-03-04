@@ -20,8 +20,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private lastData: UsageLimits | null = null;
 
-  /** Called after active account changes, so extension.ts can refresh the status bar. */
-  public onAccountSwitch?: () => void;
+  /**
+   * Called after any successful data refresh (account switch or manual refresh),
+   * so extension.ts can keep the status bar in sync.
+   */
+  public onRefresh?: () => void;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -128,7 +131,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         void (async () => {
           await setActiveAccount(this.context, msg.label as string);
           await this.refresh();
-          this.onAccountSwitch?.();
+          // onRefresh is already called inside refresh() on success
         })();
       }
     });
@@ -159,6 +162,25 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         if (e.affectsConfiguration('claudeUsage.credentialsPath')) {
           void this.refresh();
         }
+        if (e.affectsConfiguration('claudeUsage.accounts')) {
+          const accounts = getConfiguredAccounts();
+          const active = getActiveAccount(this.context);
+          const activeRemoved = active && !accounts.find(a => a.label === active.label);
+          const resetThenRefresh = activeRemoved
+            ? setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL).then(() => this.refresh())
+            : Promise.resolve(this.refresh());
+          void resetThenRefresh;
+
+          const newActiveLabel = activeRemoved
+            ? DEFAULT_ACCOUNT_LABEL
+            : (active?.label ?? DEFAULT_ACCOUNT_LABEL);
+          const defaultLabel = vscode.l10n.t('Default');
+          const updatedOptions = [
+            { label: defaultLabel, value: DEFAULT_ACCOUNT_LABEL },
+            ...accounts.map(a => ({ label: a.label, value: a.label })),
+          ];
+          this.post({ type: 'accountsUpdated', accounts: updatedOptions, activeLabel: newActiveLabel });
+        }
       })
     );
   }
@@ -178,6 +200,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       this.lastData = data;
       this.post({ type: 'update', data, stale: false });
       this.setBadge(false);
+      this.onRefresh?.();
     } catch {
       if (this.lastData) {
         this.post({ type: 'update', data: this.lastData, stale: true });
