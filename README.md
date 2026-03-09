@@ -1,10 +1,9 @@
-# Claude Code Usage
+# Ludev Code Metrics
 
 A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscription usage — session (5h) and weekly (7d) — directly in the Status Bar and in a dedicated sidebar panel.
 
 <!-- TOC -->
 
-- [Claude Code Usage](#claude-code-usage)
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Status Bar](#status-bar)
@@ -71,7 +70,7 @@ Clicking either item refreshes immediately.
 
 ## Sidebar Panel
 
-Click the gauge icon in the Activity Bar to open the **Claude Code Usage** panel.
+Click the gauge icon in the Activity Bar to open the **Ludev Code Metrics** panel.
 
 The panel shows:
 
@@ -105,16 +104,16 @@ The **Skills** tab in the sidebar lets you discover and install [skills.sh](http
 
 ## Configuration
 
-Open Settings (`Cmd/Ctrl + ,`) and search for `claudeUsage`.
+Open Settings (`Cmd/Ctrl + ,`) and search for `ludevMetrics`.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `claudeUsage.barStyle` | string | `"gradient"` | Status bar display style: `gradient`, `blocks`, `icon-only`, `icon+gradient` |
-| `claudeUsage.refreshInterval` | number | `60` | Poll interval in seconds (minimum 30) |
-| `claudeUsage.warningThreshold` | number | `80` | Usage % at which the warning colour activates |
-| `claudeUsage.credentialsPath` | string | `""` | Path to a custom credentials JSON file (full credentials, includes plan type) |
-| `claudeUsage.viewMode` | string | `"extended"` | Sidebar view mode: `extended` (Session + Weekly cards) or `compact` (Overview only) |
-| `claudeUsage.manualToken` | string | `""` | Raw OAuth token fallback (usage data only, no plan badge) |
+| `ludevMetrics.barStyle` | string | `"gradient"` | Status bar display style: `gradient`, `blocks`, `icon-only`, `icon+gradient` |
+| `ludevMetrics.refreshInterval` | number | `60` | Poll interval in seconds (minimum 30) |
+| `ludevMetrics.warningThreshold` | number | `80` | Usage % at which the warning colour activates |
+| `ludevMetrics.credentialsPath` | string | `""` | Path to a custom credentials JSON file (full credentials, includes plan type) |
+| `ludevMetrics.viewMode` | string | `"extended"` | Sidebar view mode: `extended` (Session + Weekly cards) or `compact` (Overview only) |
+| `ludevMetrics.manualToken` | string | `""` | Raw OAuth token fallback (usage data only, no plan badge) |
 
 All settings take effect immediately — no reload required.
 
@@ -136,8 +135,8 @@ The extension tries the following sources in order and uses the first valid toke
 3. `~/.claude/credentials.json` — alternative path.
 4. **Linux only:** `secret-tool lookup service "Claude Code-credentials"`.
 5. **Windows only:** `%APPDATA%\claude\credentials.json`.
-6. `claudeUsage.credentialsPath` setting — or run **Claude Usage: Set Credentials File Path** from the Command Palette / sidebar button. Point to any valid `credentials.json` file; provides full credentials including the plan badge.
-7. `claudeUsage.manualToken` setting — or run **Claude Usage: Enter Token Manually** from the Command Palette / sidebar button. Raw token only.
+6. `ludevMetrics.credentialsPath` setting — or run **Claude Usage: Set Credentials File Path** from the Command Palette / sidebar button. Point to any valid `credentials.json` file; provides full credentials including the plan badge.
+7. `ludevMetrics.manualToken` setting — or run **Claude Usage: Enter Token Manually** from the Command Palette / sidebar button. Raw token only.
 
 > **Note — manual token limitations:** sources 1–5 provide the full credentials JSON, which includes the `subscriptionType` field used to display the plan badge (Pro, Max 5×, etc.). Source 6 is a raw token string only — the extension can fetch and display your usage data normally, but the plan badge will not appear because the subscription type is not available from the token alone and is not returned by the usage API.
 

@@ -24,8 +24,8 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('claudeUsage.installSkill', () => {
-      void vscode.commands.executeCommand('claudeUsage.sidebar.focus');
+    vscode.commands.registerCommand('ludevMetrics.installSkill', () => {
+      void vscode.commands.executeCommand('ludevMetrics.sidebar.focus');
     })
   );
 
@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.l10n.t('Skip for now')
     ).then(selection => {
       if (selection === enterBtn) {
-        void vscode.commands.executeCommand('claudeUsage.setToken');
+        void vscode.commands.executeCommand('ludevMetrics.setToken');
       }
     });
   }

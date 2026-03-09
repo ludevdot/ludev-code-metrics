@@ -16,7 +16,7 @@ import { getSkillsTabStyles, getSkillsTabHtml, getSkillsTabScript } from './side
 import type { SidebarI18n } from './sidebar/types';
 
 export class UsageSidebarProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'claudeUsage.sidebar';
+  public static readonly viewType = 'ludevMetrics.sidebar';
 
   private view?: vscode.WebviewView;
   private lastData: UsageLimits | null = null;
@@ -57,12 +57,12 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       }
       if (msg.type === 'changeStyle') {
         void vscode.workspace
-          .getConfiguration('claudeUsage')
+          .getConfiguration('ludevMetrics')
           .update('barStyle', msg.value, vscode.ConfigurationTarget.Global);
       }
       if (msg.type === 'changeViewMode') {
         void vscode.workspace
-          .getConfiguration('claudeUsage')
+          .getConfiguration('ludevMetrics')
           .update('viewMode', msg.value, vscode.ConfigurationTarget.Global);
       }
       if (msg.type === 'setToken') {
@@ -75,7 +75,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           });
           if (token !== undefined) {
             await vscode.workspace
-              .getConfiguration('claudeUsage')
+              .getConfiguration('ludevMetrics')
               .update('manualToken', token.trim(), vscode.ConfigurationTarget.Global);
           }
         })();
@@ -114,7 +114,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           });
           if (uris?.[0]) {
             await vscode.workspace
-              .getConfiguration('claudeUsage')
+              .getConfiguration('ludevMetrics')
               .update('credentialsPath', uris[0].fsPath, vscode.ConfigurationTarget.Global);
           }
         })();
@@ -126,22 +126,22 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('claudeUsage.barStyle')) {
+        if (e.affectsConfiguration('ludevMetrics.barStyle')) {
           const style = vscode.workspace
-            .getConfiguration('claudeUsage')
+            .getConfiguration('ludevMetrics')
             .get<string>('barStyle', 'gradient');
           this.post({ type: 'styleChanged', value: style });
         }
-        if (e.affectsConfiguration('claudeUsage.viewMode')) {
+        if (e.affectsConfiguration('ludevMetrics.viewMode')) {
           const mode = vscode.workspace
-            .getConfiguration('claudeUsage')
+            .getConfiguration('ludevMetrics')
             .get<string>('viewMode', 'extended');
           this.post({ type: 'viewModeChanged', value: mode });
         }
-        if (e.affectsConfiguration('claudeUsage.manualToken')) {
+        if (e.affectsConfiguration('ludevMetrics.manualToken')) {
           void this.refresh();
         }
-        if (e.affectsConfiguration('claudeUsage.credentialsPath')) {
+        if (e.affectsConfiguration('ludevMetrics.credentialsPath')) {
           void this.refresh();
         }
       })
@@ -213,9 +213,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       );
       if (overwrite !== vscode.l10n.t('Update')) { return; }
       const updated = existing.map(a => a.email === captured.email ? captured : a);
-      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
+      await vscode.workspace.getConfiguration('ludevMetrics').update('accounts', updated, vscode.ConfigurationTarget.Global);
     } else {
-      await vscode.workspace.getConfiguration('claudeUsage').update('accounts', [...existing, captured], vscode.ConfigurationTarget.Global);
+      await vscode.workspace.getConfiguration('ludevMetrics').update('accounts', [...existing, captured], vscode.ConfigurationTarget.Global);
     }
 
     await setActiveAccount(this.context, captured.email);
@@ -241,10 +241,10 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       () => Math.random().toString(36)[2]
     ).join('');
     const currentStyle = vscode.workspace
-      .getConfiguration('claudeUsage')
+      .getConfiguration('ludevMetrics')
       .get<string>('barStyle', 'gradient');
     const currentViewMode = vscode.workspace
-      .getConfiguration('claudeUsage')
+      .getConfiguration('ludevMetrics')
       .get<string>('viewMode', 'extended');
 
     const activeAccount = getActiveAccount(this.context);
@@ -254,7 +254,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     const i18n: SidebarI18n = {
       yourAccount:      vscode.l10n.t('Your account'),
       plan:             vscode.l10n.t('Plan:'),
-      title:            vscode.l10n.t('Claude Code Usage'),
+      title: vscode.l10n.t('Ludev Code Metrics'),
       refresh:          vscode.l10n.t('Refresh'),
       session:          vscode.l10n.t('Session'),
       session5h:        vscode.l10n.t('5h window'),
@@ -264,7 +264,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       used:             vscode.l10n.t('used'),
       noResetTime:      vscode.l10n.t('no reset time'),
       notAuth:          vscode.l10n.t('Not authenticated'),
-      notAuthHint:      vscode.l10n.t('Ensure Claude Code is installed and logged in, or set {0} in settings.', 'claudeUsage.manualToken'),
+      notAuthHint:      vscode.l10n.t('Ensure Claude Code is installed and logged in, or set {0} in settings.', 'ludevMetrics.manualToken'),
       setTokenBtn:      vscode.l10n.t('Enter token manually'),
       tokenOnlyDesc:    vscode.l10n.t('Raw OAuth token. Usage data only — plan badge unavailable.'),
       setCredPathBtn:   vscode.l10n.t('Set credentials path'),

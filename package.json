@@ -1,27 +1,31 @@
 {
   "name": "claude-usage-indicator",
-  "displayName": "Claude Code Usage",
+  "displayName": "Ludev Code Metrics",
   "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
-  "version": "1.0.5",
-  "publisher": "claude-usage",
+  "version": "1.1.2",
+  "publisher": "ludevdot",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/claude-usage-indicator.git"
+    "url": "https://github.com/ludevdot/ludev.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/claude-usage-indicator/issues"
+    "url": "https://github.com/ludevdot/ludev.git/issues"
   },
-  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/claude-usage-indicator#readme",
+  "homepage": "",
   "keywords": [
     "claude",
     "anthropic",
     "claude code",
     "usage",
     "status bar",
+    "ludev",
+    "ludevdot",
+    "metrics",
+    "insights",
     "ai"
   ],
-  "icon": "media/logo.png",
+  "icon": "media/logo_purple.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -37,54 +41,54 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "claudeUsageSidebar",
+          "id": "ludevMetricsSidebar",
           "title": "%view.container.title%",
-          "icon": "media/test.svg"
+          "icon": "media/activity.svg"
         }
       ]
     },
     "views": {
-      "claudeUsageSidebar": [
+      "ludevMetricsSidebar": [
         {
           "type": "webview",
-          "id": "claudeUsage.sidebar",
+          "id": "ludevMetrics.sidebar",
           "name": "%view.usage.name%"
         }
       ]
     },
     "commands": [
       {
-        "command": "claudeUsage.refresh",
+        "command": "ludevMetrics.refresh",
         "title": "%command.refresh.title%"
       },
       {
-        "command": "claudeUsage.setToken",
+        "command": "ludevMetrics.setToken",
         "title": "%command.setToken.title%"
       },
       {
-        "command": "claudeUsage.setCredentialsPath",
+        "command": "ludevMetrics.setCredentialsPath",
         "title": "%command.setCredentialsPath.title%"
       },
       {
-        "command": "claudeUsage.installSkill",
+        "command": "ludevMetrics.installSkill",
         "title": "%command.installSkill.title%"
       }
     ],
     "configuration": {
       "title": "%config.title%",
       "properties": {
-        "claudeUsage.refreshInterval": {
+        "ludevMetrics.refreshInterval": {
           "type": "number",
           "default": 60,
           "minimum": 30,
           "description": "%config.refreshInterval.description%"
         },
-        "claudeUsage.manualToken": {
+        "ludevMetrics.manualToken": {
           "type": "string",
           "default": "",
           "description": "%config.manualToken.description%"
         },
-        "claudeUsage.barStyle": {
+        "ludevMetrics.barStyle": {
           "type": "string",
           "enum": [
             "gradient",
@@ -101,19 +105,19 @@
           "default": "gradient",
           "description": "%config.barStyle.description%"
         },
-        "claudeUsage.credentialsPath": {
+        "ludevMetrics.credentialsPath": {
           "type": "string",
           "default": "",
           "description": "%config.credentialsPath.description%"
         },
-        "claudeUsage.warningThreshold": {
+        "ludevMetrics.warningThreshold": {
           "type": "number",
           "default": 80,
           "minimum": 0,
           "maximum": 100,
           "description": "%config.warningThreshold.description%"
         },
-        "claudeUsage.viewMode": {
+        "ludevMetrics.viewMode": {
           "type": "string",
           "enum": [
             "extended",
@@ -122,7 +126,7 @@
           "default": "extended",
           "description": "%config.viewMode.description%"
         },
-        "claudeUsage.accounts": {
+        "ludevMetrics.accounts": {
           "type": "array",
           "default": [],
           "description": "%config.accounts.description%",

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-const KEY = 'claudeUsage.history';
+const KEY = 'ludevMetrics.history';
 const MAX_POINTS = 48;
 const TTL_MS = 48 * 60 * 60 * 1000;
 

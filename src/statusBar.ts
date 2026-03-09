@@ -20,22 +20,22 @@ export class UsageStatusBar {
       vscode.StatusBarAlignment.Right,
       100
     );
-    this.sessionItem.command = 'claudeUsage.refresh';
+    this.sessionItem.command = 'ludevMetrics.refresh';
 
     this.weeklyItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
       99
     );
-    this.weeklyItem.command = 'claudeUsage.refresh';
+    this.weeklyItem.command = 'ludevMetrics.refresh';
 
     this.sessionItem.show();
     this.weeklyItem.show();
 
     this.disposables.push(
-      vscode.commands.registerCommand('claudeUsage.refresh', () => {
+      vscode.commands.registerCommand('ludevMetrics.refresh', () => {
         void this.refresh();
       }),
-      vscode.commands.registerCommand('claudeUsage.setCredentialsPath', async () => {
+      vscode.commands.registerCommand('ludevMetrics.setCredentialsPath', async () => {
         const uris = await vscode.window.showOpenDialog({
           canSelectMany: false,
           openLabel: vscode.l10n.t('Select credentials file'),
@@ -43,12 +43,12 @@ export class UsageStatusBar {
         });
         if (uris?.[0]) {
           await vscode.workspace
-            .getConfiguration('claudeUsage')
+            .getConfiguration('ludevMetrics')
             .update('credentialsPath', uris[0].fsPath, vscode.ConfigurationTarget.Global);
           void this.refresh();
         }
       }),
-      vscode.commands.registerCommand('claudeUsage.setToken', async () => {
+      vscode.commands.registerCommand('ludevMetrics.setToken', async () => {
         const token = await vscode.window.showInputBox({
           prompt: vscode.l10n.t('Enter your Claude Code OAuth token'),
           placeHolder: vscode.l10n.t('Paste your token here...'),
@@ -57,13 +57,13 @@ export class UsageStatusBar {
         });
         if (token !== undefined) {
           await vscode.workspace
-            .getConfiguration('claudeUsage')
+            .getConfiguration('ludevMetrics')
             .update('manualToken', token.trim(), vscode.ConfigurationTarget.Global);
           void this.refresh();
         }
       }),
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('claudeUsage')) {
+        if (e.affectsConfiguration('ludevMetrics')) {
           this.restartPolling();
         }
       })
@@ -115,7 +115,7 @@ export class UsageStatusBar {
           showUsage
         );
         if (action === showUsage) {
-          void vscode.commands.executeCommand('claudeUsage.openSidebar');
+          void vscode.commands.executeCommand('ludevMetrics.openSidebar');
         }
       }
     } else {
@@ -130,7 +130,7 @@ export class UsageStatusBar {
           showUsage
         );
         if (action === showUsage) {
-          void vscode.commands.executeCommand('claudeUsage.openSidebar');
+          void vscode.commands.executeCommand('ludevMetrics.openSidebar');
         }
       }
     } else {
@@ -139,7 +139,7 @@ export class UsageStatusBar {
   }
 
   private updateDisplay(data: UsageLimits, stale: boolean, accountLabel: string | null): void {
-    const config = vscode.workspace.getConfiguration('claudeUsage');
+    const config = vscode.workspace.getConfiguration('ludevMetrics');
     const barStyle = config.get<BarStyle>('barStyle', 'gradient');
     const warningThreshold = config.get<number>('warningThreshold', 80);
     const staleMark = stale ? ' ~' : '';
@@ -228,7 +228,7 @@ export class UsageStatusBar {
     this.sessionItem.text = `$(error) Claude: ${vscode.l10n.t('No auth')}`;
     this.sessionItem.backgroundColor = errorBg;
     this.sessionItem.tooltip = vscode.l10n.t(
-      'Claude Code credentials not found.\nSet claudeUsage.manualToken in settings, or ensure Claude Code is installed and logged in.'
+      'Claude Code credentials not found.\nSet ludevMetrics.manualToken in settings, or ensure Claude Code is installed and logged in.'
     );
     this.weeklyItem.hide();
   }

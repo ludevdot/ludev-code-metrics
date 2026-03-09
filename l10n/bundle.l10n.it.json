@@ -11,7 +11,7 @@
   "Utilization: {0}%": "Utilizzo: {0}%",
   "Click to refresh": "Clic per aggiornare",
   "No auth": "Non autenticato",
-  "Claude Code credentials not found.\nSet claudeUsage.manualToken in settings, or ensure Claude Code is installed and logged in.": "Credenziali Claude Code non trovate.\nImposta claudeUsage.manualToken nelle impostazioni o assicurati che Claude Code sia installato e che tu abbia effettuato l'accesso.",
+  "Claude Code credentials not found.\nSet ludevMetrics.manualToken in settings, or ensure Claude Code is installed and logged in.": "Credenziali Claude Code non trovate.\nImposta ludevMetrics.manualToken nelle impostazioni o assicurati che Claude Code sia installato e che tu abbia effettuato l'accesso.",
   "Your account": "Il tuo account",
   "Plan:": "Piano:",
   "Claude Code Usage": "Utilizzo Claude Code",

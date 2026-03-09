@@ -30,8 +30,8 @@ interface ClaudeCredentials {
  *   3. ~/.claude/credentials.json
  *   4. Linux secret-tool
  *   5. Windows %APPDATA%\claude\credentials.json
- *   6. Custom credentials file path from claudeUsage.credentialsPath setting
- *   7. Manual token from claudeUsage.manualToken setting
+ *   6. Custom credentials file path from ludevMetrics.credentialsPath setting
+ *   7. Manual token from ludevMetrics.manualToken setting
  *
  * Returns the access token string, or null if none found.
  * IMPORTANT: The token value is never logged or persisted.
@@ -92,7 +92,7 @@ export function getAccessToken(): string | null {
 
   // 6. Custom credentials file path from settings
   const credentialsPath = vscode.workspace
-    .getConfiguration('claudeUsage')
+    .getConfiguration('ludevMetrics')
     .get<string>('credentialsPath', '')
     .trim();
   if (credentialsPath) {
@@ -104,7 +104,7 @@ export function getAccessToken(): string | null {
 
   // 7. Manual token from settings
   const manualToken = vscode.workspace
-    .getConfiguration('claudeUsage')
+    .getConfiguration('ludevMetrics')
     .get<string>('manualToken', '')
     .trim();
   if (manualToken) {
@@ -185,7 +185,7 @@ export function getSubscriptionType(): string | null {
 
   // Custom credentials file path from settings
   const credentialsPath = vscode.workspace
-    .getConfiguration('claudeUsage')
+    .getConfiguration('ludevMetrics')
     .get<string>('credentialsPath', '')
     .trim();
   if (credentialsPath) {
@@ -238,7 +238,7 @@ export function captureCliSession(): { email: string; subscriptionType: string; 
 /** Returns the configured accounts from settings. Deduplicates by label. */
 export function getConfiguredAccounts(): AccountConfig[] {
   const raw = vscode.workspace
-    .getConfiguration('claudeUsage')
+    .getConfiguration('ludevMetrics')
     .get<AccountConfig[]>('accounts', []);
   const seen = new Set<string>();
   return raw.filter(a => a.email && !seen.has(a.email) && seen.add(a.email));
@@ -250,14 +250,14 @@ export function getConfiguredAccounts(): AccountConfig[] {
  */
 export function isAccountManagementEnabled(): boolean {
   const inspect = vscode.workspace
-    .getConfiguration('claudeUsage')
+    .getConfiguration('ludevMetrics')
     .inspect<AccountConfig[]>('accounts');
   return inspect?.globalValue !== undefined;
 }
 
 /** Returns the active account from globalState, or null for the Default auto-detect account. */
 export function getActiveAccount(context: vscode.ExtensionContext): AccountConfig | null {
-  const email = context.globalState.get<string>('claudeUsage.activeAccount', DEFAULT_ACCOUNT_LABEL);
+  const email = context.globalState.get<string>('ludevMetrics.activeAccount', DEFAULT_ACCOUNT_LABEL);
   if (!email || email === DEFAULT_ACCOUNT_LABEL) { return null; }
   const accounts = getConfiguredAccounts();
   return accounts.find(a => a.email === email) ?? null;
@@ -265,5 +265,5 @@ export function getActiveAccount(context: vscode.ExtensionContext): AccountConfi
 
 /** Persists the active account label to globalState. */
 export async function setActiveAccount(context: vscode.ExtensionContext, label: string): Promise<void> {
-  await context.globalState.update('claudeUsage.activeAccount', label);
+  await context.globalState.update('ludevMetrics.activeAccount', label);
 }
