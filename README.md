@@ -2,10 +2,6 @@
 
 A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscription usage — session (5h) and weekly (7d) — directly in the Status Bar and in a dedicated sidebar panel.
 
-<!-- TODO: Add screenshot of the status bar showing both items with the gradient style, e.g. "$(clock) ▰▰▰▰▰▱▱▱▱▱ Session: 45% · 2h left" -->
-
-<!-- TODO: Add screenshot of the sidebar panel open with the two circular progress cards and the style picker radio buttons -->
-
 <!-- TOC -->
 
 - [Claude Code Usage](#claude-code-usage)
@@ -13,6 +9,7 @@ A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscr
 - [Quick Start](#quick-start)
 - [Status Bar](#status-bar)
 - [Sidebar Panel](#sidebar-panel)
+- [Skills Browser](#skills-browser)
 - [Configuration](#configuration)
 - [Credential Resolution](#credential-resolution)
 - [Internationalization](#internationalization)
@@ -27,20 +24,22 @@ A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscr
 
 1. **Status Bar items** — live session and weekly usage at a glance, always visible.
 2. **Four display styles** — gradient (`▰▱`), blocks (`█░`), icon-only, or icon + gradient bar.
-3. **Dynamic colors** — normal → warning → error background as usage rises.
+3. **Dynamic colors** — green text in normal state → warning background → error background as usage rises.
 4. **Sidebar panel** — Activity Bar icon opens a panel with SVG circular progress rings, a linear bar, and reset countdowns.
 5. **Style picker** — radio buttons inside the panel to switch styles instantly, no settings file needed.
 6. **Overview card** — compact linear summary of Session (5h), Weekly (7d), and Opus (7d) usage in a single glance; the Opus row is hidden automatically when no Opus data is available.
 7. **Compact / Extended mode** — toggle between *Extended* (Session + Weekly detail cards) and *Compact* (Overview summary only) directly from the panel; preference is persisted per-user.
-6. **Subscription plan badge** — displays your plan (Free, Pro, Max 5×, Max 20×, Team…) in the sidebar header, read from local credentials.
-8. **Multilingual UI** — automatically follows VS Code's display language (English, Spanish, Italian, French).
-9. **Stale indicator** — shows `~` when the last fetch failed but cached data is available.
-10. **Cross-platform credentials** — reads automatically from `~/.claude/.credentials.json` (written by Claude Code CLI). No manual token setup required in most cases.
-11. **Click to refresh** — clicking either status bar item triggers an immediate update.
-12. **Enter token manually** — Command Palette command and sidebar button to paste a raw OAuth token when automatic resolution fails.
-13. **Set credentials path** — Command Palette command and sidebar button to point to a custom credentials JSON file; unlocks the plan badge in addition to usage data.
-14. **Startup notification** — if no credentials are found at launch, a notification appears with an option to set credentials immediately or skip.
-15. **Activity Bar badge** — the sidebar icon shows a `1` badge while no credentials are configured, disappearing once a valid token is found.
+8. **Subscription plan badge** — displays your plan (Free, Pro, Max 5×, Max 20×, Team…) in the sidebar header, read from local credentials.
+9. **Skills browser** — search and install Claude Code skills from [skills.sh](https://skills.sh) directly from the sidebar; installs into the current workspace's `.claude/skills/` directory.
+10. **Persistent tab** — the sidebar remembers the last open tab (Usage or Skills) between panel hide/show cycles.
+11. **Multilingual UI** — automatically follows VS Code's display language (English, Spanish, Italian, French).
+12. **Stale indicator** — shows `~` when the last fetch failed but cached data is available.
+13. **Cross-platform credentials** — reads automatically from `~/.claude/.credentials.json` (written by Claude Code CLI). No manual token setup required in most cases.
+14. **Click to refresh** — clicking either status bar item triggers an immediate update.
+15. **Enter token manually** — Command Palette command and sidebar button to paste a raw OAuth token when automatic resolution fails.
+16. **Set credentials path** — Command Palette command and sidebar button to point to a custom credentials JSON file; unlocks the plan badge in addition to usage data.
+17. **Startup notification** — if no credentials are found at launch, a notification appears with an option to set credentials immediately or skip.
+18. **Activity Bar badge** — the sidebar icon shows a `1` badge while no credentials are configured, disappearing once a valid token is found.
 
 ## Quick Start
 
@@ -62,19 +61,17 @@ Two items are shown on the right side of the Status Bar:
 
 Colors change automatically:
 
-| Threshold | Color |
-|-----------|-------|
-| < `warningThreshold` (default 80%) | Default |
-| ≥ `warningThreshold` | `statusBarItem.warningBackground` |
-| ≥ 95% | `statusBarItem.errorBackground` |
+| Threshold | Effect |
+|-----------|--------|
+| < `warningThreshold` (default 80%) | Text colored `charts.green` so the progress bar stands out |
+| ≥ `warningThreshold` | `statusBarItem.warningBackground` (orange) |
+| ≥ 95% | `statusBarItem.errorBackground` (red) |
 
 Clicking either item refreshes immediately.
 
 ## Sidebar Panel
 
 Click the gauge icon in the Activity Bar to open the **Claude Code Usage** panel.
-
-<!-- TODO: Add a labelled screenshot of the panel highlighting: 1) circular rings, 2) linear bars, 3) reset time, 4) stale badge, 5) refresh button, 6) style picker -->
 
 The panel shows:
 
@@ -83,7 +80,7 @@ The panel shows:
 - **Reset countdown** — "2h left", "3d left", etc.
 - **Subscription plan badge** — your plan (Free, Pro, Max 5×…) shown in the header when credentials are loaded from the local store (Keychain or `~/.claude/.credentials.json`). Hidden in the no-auth state, and not shown when using a manual token (see note below).
 - **Stale badge** — appears if the last API call failed and cached data is shown.
-- **Refresh button** — animated spin on click.
+- **Refresh button** — triggers an immediate API call (30-second cooldown to avoid rate limits).
 - **Enter token manually button** — shown in the no-auth state; opens an input box to paste a raw token. Usage data loads but the plan badge will not appear.
 - **Set credentials path button** — shown alongside the token button; opens a native file picker to select the Claude Code credentials JSON. Provides full credentials including the plan badge.
 - **Activity Bar badge (`1`)** — visible on the sidebar icon whenever no credentials are configured.
@@ -91,6 +88,20 @@ The panel shows:
 - **View mode toggle** — *Extended* (default) shows the Session and Weekly detail cards; *Compact* shows the Overview card only. Switching saves the preference to VS Code settings.
 - **Style picker** — four radio buttons to switch the Status Bar display style live.
 - **Last updated** timestamp at the bottom.
+
+## Skills Browser
+
+The **Skills** tab in the sidebar lets you discover and install [skills.sh](https://skills.sh) skills without leaving VS Code.
+
+- **Auto-load** — the skill list loads automatically the first time you open the tab (top 50 results).
+- **Search** — type two or more characters to filter skills by name.
+- **Per-skill actions** — each result shows two buttons:
+  - **Install** — downloads `SKILL.md` from GitHub and writes it to `.claude/skills/<skillId>/SKILL.md` in your current workspace, then updates `skills-lock.json`.
+  - **View on skills.sh** — opens the skill's page in your browser.
+- **Installed indicator** — once installed, the Install button turns green and is disabled.
+- **Result cap** — when 50 results are returned a hint appears to refine the query.
+
+> Skills are installed **per workspace**, not globally. Requires an open workspace folder.
 
 ## Configuration
 
@@ -155,10 +166,21 @@ Source files under `src/`:
 |------|----------------|
 | `extension.ts` | Entry point — wires up `UsageStatusBar` and `UsageSidebarProvider` |
 | `statusBar.ts` | Two `StatusBarItem` instances, polling interval, stale cache, config listener |
-| `sidebarView.ts` | `WebviewViewProvider` — SVG panel with circular rings and style picker |
+| `sidebarView.ts` | `WebviewViewProvider` — assembles the HTML panel, routes webview messages |
 | `usageApi.ts` | HTTPS fetch to `api.anthropic.com/api/oauth/usage` (Node built-ins only) |
 | `credentials.ts` | Cross-platform token resolution; also exports `getSubscriptionType()` |
-| `utils.ts` | Pure helpers: `formatTimeLeft`, `buildProgressBar`, `getColorByUsage`, `getDynamicIcon` |
+| `skillsManager.ts` | skills.sh API search, skill installation (SKILL.md + skills-lock.json), cache |
+| `usageHistory.ts` | Snapshot ring-buffer for historical usage data |
+| `utils.ts` | Pure helpers: `formatTimeLeft`, `buildProgressBar`, `getColorByUsage`, `getTextColorByUsage`, `getDynamicIcon` |
+
+Sidebar sub-modules under `src/sidebar/`:
+
+| File | Responsibility |
+|------|----------------|
+| `sharedStyles.ts` | Base CSS (layout, tabs, buttons, animations) shared across all panels |
+| `usageTab.ts` | Usage tab HTML, styles, and client-side script |
+| `skillsTab.ts` | Skills tab HTML, styles, and client-side script |
+| `types.ts` | `SidebarI18n` interface — all localizable strings for the webview |
 
 i18n files:
 
@@ -183,10 +205,13 @@ pnpm test:watch    # watch mode during development
 | `src/test/utils.test.ts` | `formatTimeLeft`, `buildProgressBar`, `getDynamicIcon`, `getColorByUsage` |
 | `src/test/usageApi.test.ts` | `fetchUsage` — 200/non-200 responses, bad JSON, network errors, timeout, headers |
 | `src/test/credentials.test.ts` | `getAccessToken` — file paths, JSON errors, Linux secret-tool, manual token fallback |
+| `src/test/sidebarView.test.ts` | `UsageSidebarProvider` — HTML generation, message handling, i18n |
 
 ## Change Log
 
-This project uses [Changesets](https://github.com/changesets/changesets) for versioning and changelog generation.
+See [CHANGELOG.md](./CHANGELOG.md) for the full version history.
+
+This project uses [Changesets](https://github.com/changesets/changesets) for versioning.
 
 **In your feature branch:**
 
@@ -196,9 +221,7 @@ git add .
 git commit            # the .changeset/*.md file is committed alongside your code
 ```
 
-**On merge to main:** a GitHub Action consumes the changesets, bumps `package.json`, and updates `CHANGELOG.md` via an automatic "Version Packages" PR. Commits without a pending changeset proceed normally.
-
-[See CHANGELOG.md](./CHANGELOG.md)
+**On merge to main:** a GitHub Action consumes the changesets, bumps `package.json`, and updates `CHANGELOG.md` via an automatic "Version Packages" PR.
 
 ## Contributing
 
