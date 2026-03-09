@@ -1,0 +1,4 @@
+# GitHub CODEOWNERS
+# Automatically request review from the code owner(s) when a PR is opened
+
+* @ludevdot

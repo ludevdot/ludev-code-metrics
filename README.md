@@ -238,4 +238,29 @@ git commit            # the .changeset/*.md file is committed alongside your cod
 
 **On merge to main:** a GitHub Action consumes the changesets, bumps `package.json`, and updates `CHANGELOG.md` via an automatic "Version Packages" PR.
 
+## 🔗 Repository Links
+
+- **[Main Repository](https://github.com/ludevdot/ludev-code-metrics)** — source code and documentation
+- **[Issues](https://github.com/ludevdot/ludev-code-metrics/issues)** — report bugs or request features
+- **[Pull Requests](https://github.com/ludevdot/ludev-code-metrics/pulls)** — view and contribute changes
+
 ## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Create a changeset before opening the PR:
+   ```bash
+   pnpm changeset
+   ```
+   This will prompt you to:
+   - Select the bump type (`patch`, `minor`, or `major`)
+   - Write a summary of your changes
+
+   A new file will be created in `.changeset/` — commit this file alongside your code.
+5. Push to the branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request
+
+**Note:** Changesets are consumed automatically when merging to `main`, which bumps the version and updates `CHANGELOG.md`.
