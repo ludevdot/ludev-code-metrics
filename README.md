@@ -2,8 +2,6 @@
 
 A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscription usage — session (5h) and weekly (7d) — directly in the Status Bar and in a dedicated sidebar panel.
 
-<!-- TOC -->
-
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Status Bar](#status-bar)
@@ -17,7 +15,6 @@ A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscr
 - [Change Log](#change-log)
 - [Contributing](#contributing)
 
-<!-- /TOC -->
 
 ## Features
 
