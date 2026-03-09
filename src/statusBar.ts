@@ -4,7 +4,7 @@ import {
   DEFAULT_ACCOUNT_LABEL,
 } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
-import { BarStyle, buildProgressBar, formatTimeLeft, getColorByUsage, getDynamicIcon } from './utils';
+import { BarStyle, buildProgressBar, formatTimeLeft, getColorByUsage, getTextColorByUsage, getDynamicIcon } from './utils';
 
 export class UsageStatusBar {
   private readonly sessionItem: vscode.StatusBarItem;
@@ -152,6 +152,7 @@ export class UsageStatusBar {
       '$(clock)', sessionPct, vscode.l10n.t('Session'), sessionTimeStr, staleMark, barStyle, warningThreshold, accountLabel
     );
     this.sessionItem.backgroundColor = getColorByUsage(sessionPct, warningThreshold);
+    this.sessionItem.color = getTextColorByUsage(sessionPct, warningThreshold);
     this.sessionItem.tooltip = this.buildTooltip(
       vscode.l10n.t('Session Usage (5h rolling window)'),
       sessionPct,
@@ -167,6 +168,7 @@ export class UsageStatusBar {
       '$(calendar)', weeklyPct, vscode.l10n.t('Weekly'), weeklyTimeStr, staleMark, barStyle, warningThreshold, accountLabel
     );
     this.weeklyItem.backgroundColor = getColorByUsage(weeklyPct, warningThreshold);
+    this.weeklyItem.color = getTextColorByUsage(weeklyPct, warningThreshold);
     this.weeklyItem.tooltip = this.buildTooltip(
       vscode.l10n.t('Weekly Usage (7-day rolling window)'),
       weeklyPct,

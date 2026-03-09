@@ -62,6 +62,22 @@ export function getDynamicIcon(percent: number, warningThreshold: number): strin
 }
 
 /**
+ * Returns a foreground ThemeColor for the status bar text (progress bar blocks).
+ * Only returns a color in the "normal" range so it doesn't clash with backgroundColor.
+ * - < warningThreshold: charts.green (blocks look green)
+ * - else: undefined (backgroundColor already provides visual feedback)
+ */
+export function getTextColorByUsage(
+  percent: number,
+  warningThreshold: number
+): vscode.ThemeColor | undefined {
+  if (percent >= warningThreshold) {
+    return undefined;
+  }
+  return new vscode.ThemeColor('charts.green');
+}
+
+/**
  * Returns the appropriate StatusBarItem backgroundColor based on utilization.
  * - >= 95%: errorBackground
  * - >= warningThreshold%: warningBackground

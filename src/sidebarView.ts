@@ -9,7 +9,7 @@ import { formatTimeLeft } from './utils';
 import { addSnapshot, getHistory } from './usageHistory';
 import * as fs from 'fs';
 import * as path from 'path';
-import { searchSkills, loadCache, saveCache, installSkill, fetchSkillMd, SkillResult } from './skillsManager';
+import { searchSkills, loadCache, saveCache, installSkill, SkillResult } from './skillsManager';
 import { getSharedStyles } from './sidebar/sharedStyles';
 import { getUsageTabStyles, getUsageTabHtml, getUsageTabScript } from './sidebar/usageTab';
 import { getSkillsTabStyles, getSkillsTabHtml, getSkillsTabScript } from './sidebar/skillsTab';
@@ -80,17 +80,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           }
         })();
       }
-      if (msg.type === 'selectSkill') {
-        void (async () => {
-          const skill = msg.skill as SkillResult;
-          const [owner, repo] = skill.source.split('/');
-          try {
-            const content = await fetchSkillMd(owner, repo, skill.skillId);
-            this.post({ type: 'skillPreview', skill, content });
-          } catch {
-            this.post({ type: 'skillPreview', skill, content: '(preview unavailable)' });
-          }
-        })();
+      if (msg.type === 'openSkillUrl') {
+        void vscode.env.openExternal(vscode.Uri.parse(msg.url as string));
       }
       if (msg.type === 'installSkill') {
         void (async () => {
@@ -303,7 +294,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       skillsInstalls:   vscode.l10n.t('installs'),
       skillsInstall:    vscode.l10n.t('Install'),
       skillsInstalling: vscode.l10n.t('Installing...'),
-      skillsCancel:     vscode.l10n.t('Cancel'),
+      skillsViewOnSkillsSh: vscode.l10n.t('View on skills.sh'),
       skillsInstalled:  vscode.l10n.t('Installed'),
       skillsInstallOk:  vscode.l10n.t('Skill installed successfully'),
       skillsInstallErr: vscode.l10n.t('Error:'),
@@ -360,18 +351,28 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       usage:  document.getElementById('tab-usage'),
       skills: document.getElementById('tab-skills'),
     };
-    document.querySelectorAll('.tab').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        document.querySelectorAll('.tab').forEach(function (b) {
-          b.classList.toggle('active', b === btn);
-        });
-        Object.entries(panels).forEach(function ([k, el]) {
-          el.classList.toggle('hidden', k !== btn.dataset.tab);
-        });
-        if (btn.dataset.tab === 'skills' && window._skillsTabActivate) {
-          window._skillsTabActivate();
-        }
+
+    function activateTab(tabName) {
+      document.querySelectorAll('.tab').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.tab === tabName);
       });
+      Object.entries(panels).forEach(function ([k, el]) {
+        el.classList.toggle('hidden', k !== tabName);
+      });
+      if (tabName === 'skills' && window._skillsTabActivate) {
+        window._skillsTabActivate();
+      }
+      vscode.setState({ tab: tabName });
+    }
+
+    // Restore last active tab
+    var savedState = vscode.getState();
+    if (savedState && savedState.tab && savedState.tab !== 'usage') {
+      activateTab(savedState.tab);
+    }
+
+    document.querySelectorAll('.tab').forEach(function (btn) {
+      btn.addEventListener('click', function () { activateTab(btn.dataset.tab); });
     });
   })();
 

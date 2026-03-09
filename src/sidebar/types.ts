@@ -41,7 +41,7 @@ export interface SidebarI18n {
   skillsInstalls: string;
   skillsInstall: string;
   skillsInstalling: string;
-  skillsCancel: string;
+  skillsViewOnSkillsSh: string;
   skillsInstalled: string;
   skillsInstallOk: string;
   skillsInstallErr: string;
