@@ -38,7 +38,8 @@ export function getSharedStyles(): string {
       transition: opacity 0.15s, background 0.15s;
     }
     .refresh-btn:hover { opacity: 1; }
-    .refresh-btn.spinning { animation: spin 0.7s linear infinite; }
+    .refresh-btn.blinking { animation: blink 0.35s ease-in-out 2; }
+    .refresh-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
     /* ── Footer ── */
     .footer {
@@ -250,6 +251,9 @@ export function getSharedStyles(): string {
 
     /* ── Helpers ── */
     .hidden { display: none !important; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes blink {
+      0%, 100% { opacity: 0.6; }
+      50%       { opacity: 0.15; }
+    }
   `;
 }

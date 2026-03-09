@@ -44,12 +44,10 @@ export function saveCache(context: vscode.ExtensionContext, skills: SkillResult[
  * Requires a minimum of 2 characters in the query.
  */
 export function searchSkills(query: string): Promise<SkillsSearchResponse> {
-  if (query.length < 2) {
-    return Promise.reject(new Error('Query must be at least 2 characters'));
-  }
-
   const encodedQuery = encodeURIComponent(query);
-  const url = `${SKILLS_API_BASE}?q=${encodedQuery}&limit=50`;
+  const url = query
+    ? `${SKILLS_API_BASE}?q=${encodedQuery}&limit=50`
+    : `${SKILLS_API_BASE}?limit=50`;
 
   return new Promise((resolve, reject) => {
     const req = https.request(

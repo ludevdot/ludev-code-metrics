@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import {
   getAccessTokenForAccount, getSubscriptionTypeForAccount,
   getActiveAccount, setActiveAccount, getConfiguredAccounts,
-  captureCliSession, DEFAULT_ACCOUNT_LABEL,
+  captureCliSession,
 } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
 import { formatTimeLeft } from './utils';
@@ -128,46 +128,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           }
         })();
       }
-      if (msg.type === 'switchAccount') {
-        void (async () => {
-          const previousEmail = getActiveAccount(this.context)?.email ?? null;
-          await setActiveAccount(this.context, msg.label as string);
-          this.lastData = null;
-          this.onAccountChange?.();
-          await this.refresh();
-          if ((msg.label as string) === previousEmail) { return; }
-          const openTerminal = vscode.l10n.t('Open terminal');
-          const action = await vscode.window.showInformationMessage(
-            vscode.l10n.t('Account switched. To also switch the Claude CLI, run `claude auth login`.'),
-            openTerminal
-          );
-          if (action === openTerminal) {
-            const terminal = vscode.window.createTerminal({
-              name: 'Claude Auth',
-              shellPath: 'claude',
-              shellArgs: ['auth', 'login'],
-            });
-            terminal.show();
-            const sub = vscode.window.onDidCloseTerminal(t => {
-              if (t === terminal) {
-                sub.dispose();
-                terminal.dispose();
-              }
-            });
-          }
-        })();
-      }
       if (msg.type === 'captureSession') {
         void this.runCaptureSessionFlow();
-      }
-      if (msg.type === 'manageAccounts') {
-        void this.runManageAccountsFlow();
-      }
-    });
-
-    webviewView.onDidChangeVisibility(() => {
-      if (webviewView.visible) {
-        void this.refresh();
       }
     });
 
@@ -190,19 +152,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         }
         if (e.affectsConfiguration('claudeUsage.credentialsPath')) {
           void this.refresh();
-        }
-        if (e.affectsConfiguration('claudeUsage.accounts')) {
-          const accounts = getConfiguredAccounts();
-          const active = getActiveAccount(this.context);
-          const activeRemoved = active && !accounts.find(a => a.email === active.email);
-          if (activeRemoved) {
-            void setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL).then(() => this.refresh());
-          } else {
-            void this.refresh();
-          }
-          const newActiveLabel = activeRemoved ? '' : (active?.email ?? '');
-          const updatedOptions = accounts.map(a => ({ label: formatAccountOption(a), value: a.email }));
-          this.post({ type: 'accountsUpdated', accounts: updatedOptions, activeLabel: newActiveLabel });
         }
       })
     );
@@ -250,38 +199,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     } catch {
       return [];
     }
-  }
-
-  private async runManageAccountsFlow(): Promise<void> {
-    const accounts = getConfiguredAccounts();
-    if (accounts.length === 0) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No accounts captured yet. Use ⊕ to capture the current CLI session.'));
-      return;
-    }
-
-    const picked = await vscode.window.showQuickPick(
-      accounts.map(a => ({ label: formatAccountOption(a), description: '', email: a.email })),
-      { title: vscode.l10n.t('Manage accounts'), placeHolder: vscode.l10n.t('Select account to delete') }
-    );
-    if (!picked) { return; }
-
-    const confirmed = await vscode.window.showWarningMessage(
-      vscode.l10n.t('Delete account "{0}"?', picked.email),
-      { modal: true },
-      vscode.l10n.t('Delete')
-    );
-    if (confirmed !== vscode.l10n.t('Delete')) { return; }
-
-    const updated = accounts.filter(a => a.email !== picked.email);
-    await vscode.workspace.getConfiguration('claudeUsage').update('accounts', updated, vscode.ConfigurationTarget.Global);
-
-    const active = getActiveAccount(this.context);
-    if (active?.email === picked.email) {
-      await setActiveAccount(this.context, DEFAULT_ACCOUNT_LABEL);
-    }
-    this.lastData = null;
-    this.onAccountChange?.();
-    await this.refresh();
   }
 
   private async runCaptureSessionFlow(): Promise<void> {
@@ -340,7 +257,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       .get<string>('viewMode', 'extended');
 
     const activeAccount = getActiveAccount(this.context);
-    const configuredAccounts = getConfiguredAccounts();
     const subType   = getSubscriptionTypeForAccount(activeAccount);
     const planLabel = formatPlanLabel(subType);
 
@@ -394,25 +310,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       sessionLabel:     vscode.l10n.t('Session (5h)'),
       weeklyLabel:      vscode.l10n.t('Weekly (7d)'),
       opusLabel:        vscode.l10n.t('Opus (7d)'),
-      accountLabel:     vscode.l10n.t('Account'),
       accountCapture:   vscode.l10n.t('Capture current CLI session'),
-      accountManage:    vscode.l10n.t('Manage accounts'),
-      accountHintTitle: vscode.l10n.t('How to add another account'),
-      accountHintStep1: vscode.l10n.t('1. In your terminal, log in with the other account:'),
-      accountHintStep2: vscode.l10n.t('2. Come back here and click the capture button (⊕).'),
-      accountHintStep3: vscode.l10n.t('3. Log back in with your main account when done.'),
+      refreshCooldown:  vscode.l10n.t('Please wait before refreshing again to avoid rate limits'),
     };
-
-    // Build account selector options — email · Plan, no Default
-    const hasAccounts = configuredAccounts.length > 0;
-    const activeLabel = activeAccount?.email ?? DEFAULT_ACCOUNT_LABEL;
-    const accountOptionsHtml = configuredAccounts
-      .map(a => {
-        const display = formatAccountOption(a);
-        return `<option value="${this.escapeHtml(a.email)}"${a.email === activeLabel ? ' selected' : ''}>${this.escapeHtml(display)}</option>`;
-      })
-      .join('');
-    const allAccounts = configuredAccounts.map(a => ({ label: formatAccountOption(a), value: a.email }));
 
     return /* html */`<!DOCTYPE html>
 <html lang="en">
@@ -437,23 +337,8 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   </div>
 
   <div class="account-row">
-    <span class="account-row-label">${i18n.accountLabel}</span>
-    <select class="account-select${hasAccounts ? '' : ' hidden'}" id="accountSelect">
-      ${accountOptionsHtml}
-    </select>
-    <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountCapture}">⊕</button>
-    <button class="account-add-btn${hasAccounts ? '' : ' hidden'}" id="manageAccountsBtn" title="${i18n.accountManage}">⋯</button>
+    <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountCapture}">⊕ ${i18n.accountCapture}</button>
   </div>
-
-  <details class="account-hint">
-    <summary class="account-hint-summary">${i18n.accountHintTitle}</summary>
-    <div class="account-hint-body">
-      <p class="account-hint-substep">${i18n.accountHintStep1}</p>
-      <code>claude auth login</code>
-      <p class="account-hint-substep">${i18n.accountHintStep2}</p>
-      <p class="account-hint-substep">${i18n.accountHintStep3}</p>
-    </div>
-  </details>
 
   <div class="tab-bar">
     <button class="tab active" data-tab="usage">${i18n.tabUsage}</button>
@@ -466,7 +351,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 <script nonce="${nonce}">
   const INITIAL_STYLE    = ${JSON.stringify(currentStyle)};
   const INITIAL_VIEW_MODE = ${JSON.stringify(currentViewMode)};
-  const INITIAL_ACCOUNTS = ${JSON.stringify(allAccounts)};
   const I18N  = ${JSON.stringify(i18n)};
   const vscode = acquireVsCodeApi();
 
@@ -484,16 +368,27 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         Object.entries(panels).forEach(function ([k, el]) {
           el.classList.toggle('hidden', k !== btn.dataset.tab);
         });
+        if (btn.dataset.tab === 'skills' && window._skillsTabActivate) {
+          window._skillsTabActivate();
+        }
       });
     });
   })();
 
   // ── Shared utils ──
+  var _lastRefresh = 0;
+  var REFRESH_COOLDOWN = 30000;
   function doRefresh() {
-    const btn = document.getElementById('refreshBtn');
-    btn.classList.add('spinning');
+    var now = Date.now();
+    var btn = document.getElementById('refreshBtn');
+    if (btn.disabled) { return; }
+    _lastRefresh = now;
+    btn.disabled = true;
+    btn.title = I18N.refreshCooldown;
+    btn.classList.add('blinking');
     vscode.postMessage({ type: 'refresh' });
-    setTimeout(function () { btn.classList.remove('spinning'); }, 800);
+    setTimeout(function () { btn.classList.remove('blinking'); }, 700);
+    setTimeout(function () { btn.disabled = false; btn.title = ''; }, REFRESH_COOLDOWN);
   }
   function doSetToken()    { vscode.postMessage({ type: 'setToken' }); }
   function doSetCredPath() { vscode.postMessage({ type: 'setCredentialsPath' }); }
@@ -507,15 +402,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   document.getElementById('setTokenBtn').addEventListener('click', doSetToken);
   document.getElementById('setCredPathBtn').addEventListener('click', doSetCredPath);
 
-  // ── Account selector ──
-  document.getElementById('accountSelect').addEventListener('change', function () {
-    vscode.postMessage({ type: 'switchAccount', label: this.value });
-  });
+  // ── Account capture ──
   document.getElementById('addAccountBtn').addEventListener('click', function () {
     vscode.postMessage({ type: 'captureSession' });
-  });
-  document.getElementById('manageAccountsBtn').addEventListener('click', function () {
-    vscode.postMessage({ type: 'manageAccounts' });
   });
 
   ${getUsageTabScript()}
@@ -527,11 +416,6 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 </body>
 </html>`;
   }
-}
-
-function formatAccountOption(account: import('./credentials').AccountConfig): string {
-  const plan = formatPlanLabel(account.subscriptionType ?? null);
-  return plan ? `${account.email} · ${plan}` : account.email;
 }
 
 function formatPlanLabel(subscriptionType: string | null): string {

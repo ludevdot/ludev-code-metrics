@@ -48,11 +48,6 @@ export interface SidebarI18n {
   sessionLabel: string;
   weeklyLabel: string;
   opusLabel: string;
-  accountLabel: string;
   accountCapture: string;
-  accountManage: string;
-  accountHintTitle: string;
-  accountHintStep1: string;
-  accountHintStep2: string;
-  accountHintStep3: string;
+  refreshCooldown: string;
 }

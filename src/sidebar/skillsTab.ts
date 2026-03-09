@@ -44,6 +44,26 @@ export function getSkillsTabStyles(): string {
     .skill-source   { font-size: 10px; opacity: 0.5; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .skill-installs { font-size: 10px; opacity: 0.45; flex-shrink: 0; margin-left: auto; }
     .skills-refine  { font-size: 10px; opacity: 0.5; font-style: italic; padding: 4px 2px 0; }
+    .skills-loader {
+      display: flex;
+      gap: 5px;
+      justify-content: center;
+      padding: 18px 0 10px;
+    }
+    .skills-loader span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--vscode-foreground);
+      opacity: 0.35;
+      animation: skills-bounce 1s ease-in-out infinite;
+    }
+    .skills-loader span:nth-child(2) { animation-delay: 0.15s; }
+    .skills-loader span:nth-child(3) { animation-delay: 0.30s; }
+    @keyframes skills-bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.25; }
+      40%           { transform: scale(1);   opacity: 0.7; }
+    }
 
     /* ── Skill preview panel ── */
     .skill-preview {
@@ -100,6 +120,9 @@ export function getSkillsTabHtml(i18n: Pick<SidebarI18n, 'skillsSearch' | 'skill
       placeholder="${i18n.skillsSearch}"
       autocomplete="off"
     />
+    <div class="skills-loader hidden" id="skillsLoader">
+      <span></span><span></span><span></span>
+    </div>
     <ul class="skills-list" id="skillsList">
       <li class="skills-placeholder">${i18n.skillsEmpty}</li>
     </ul>
@@ -124,6 +147,7 @@ export function getSkillsTabScript(): string {
   return `
   (function () {
     const searchInput  = document.getElementById('skillsSearch');
+    const skillsLoader = document.getElementById('skillsLoader');
     const skillsList   = document.getElementById('skillsList');
     const refineWarn   = document.getElementById('skillsRefine');
     const skillPreview = document.getElementById('skillPreview');
@@ -136,8 +160,20 @@ export function getSkillsTabScript(): string {
     let debounceTimer;
     let selectedSkill = null;
     let installedIds  = [];
+    let _initialized  = false;
+
+    function showLoader() {
+      skillsLoader.classList.remove('hidden');
+      skillsList.classList.add('hidden');
+      refineWarn.classList.add('hidden');
+    }
+    function hideLoader() {
+      skillsLoader.classList.add('hidden');
+      skillsList.classList.remove('hidden');
+    }
 
     function renderSkills(skills, count) {
+      hideLoader();
       skillsList.innerHTML = '';
       refineWarn.classList.toggle('hidden', count < 50);
       if (!skills.length) {
@@ -162,14 +198,24 @@ export function getSkillsTabScript(): string {
       });
     }
 
+    // Called by the tab switcher when the Skills tab is first activated
+    window._skillsTabActivate = function () {
+      if (_initialized) { return; }
+      showLoader();
+      vscode.postMessage({ type: 'searchSkills', query: '' });
+    };
+
     searchInput.addEventListener('input', function () {
       clearTimeout(debounceTimer);
       const query = searchInput.value.trim();
       if (query.length < 2) {
+        if (query.length === 0 && _initialized) { return; } // keep existing results
+        hideLoader();
         skillsList.innerHTML = '<li class="skills-placeholder">' + I18N.skillsEmpty + '</li>';
         refineWarn.classList.add('hidden');
         return;
       }
+      showLoader();
       debounceTimer = setTimeout(function () {
         vscode.postMessage({ type: 'searchSkills', query: query });
       }, 400);
@@ -204,7 +250,13 @@ export function getSkillsTabScript(): string {
 
     window.addEventListener('message', function (event) {
       const msg = event.data;
-      if (msg.type === 'searchResults' || msg.type === 'cacheResults') {
+      if (msg.type === 'searchResults') {
+        _initialized = true;
+        renderSkills(msg.skills, msg.count);
+      }
+      if (msg.type === 'cacheResults') {
+        _initialized = true;
+        hideLoader();
         renderSkills(msg.skills, msg.count);
       }
       if (msg.type === 'installedSkills') { installedIds = msg.ids; }
