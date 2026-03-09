@@ -2,12 +2,12 @@
   "name": "ludev-code-metrics",
   "displayName": "Ludev Code Metrics",
   "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "publisher": "ludevdot",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ludevdot/ludev.git"
+    "url": "https://github.com/ludevdot/ludev-code-metrics"
   },
   "bugs": {
     "url": "https://github.com/ludevdot/ludev-code-metrics/issues"
