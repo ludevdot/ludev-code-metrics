@@ -2,6 +2,7 @@
 
 A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscription usage — session (5h) and weekly (7d) — directly in the Status Bar and in a dedicated sidebar panel.
 
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Status Bar](#status-bar)
@@ -15,6 +16,17 @@ A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscr
 - [Change Log](#change-log)
 - [Contributing](#contributing)
 
+
+## 📸 Screenshots
+
+### Usage Overview
+![Session & Weekly Usage](assets/code-metrics-1.png)
+
+### Skills Management
+![Skills Browser & Install](assets/code-metrics-2.png)
+
+### Status Bar
+![Status Bar Styles](assets/code-metrics-3.png)
 
 ## Features
 
@@ -45,6 +57,13 @@ A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscr
 4. Click the clock icon in the Activity Bar to open the usage panel.
 
 > If credentials are not found automatically, open the Command Palette (`Cmd/Ctrl + Shift + P`) and run **Claude Usage: Enter Token Manually**, or click the **Enter token manually** button in the sidebar panel.
+
+## 🚀 Quick Start
+
+1. Install the extension from VS Code Marketplace.
+2. **Authenticate** with your Claude Code token (auto-detect or manual).
+3. **Track usage** in Status Bar or open the dedicated sidebar.
+4. **Browse & install** skills directly from VS Code.
 
 ## Status Bar
 
@@ -220,5 +239,3 @@ git commit            # the .changeset/*.md file is committed alongside your cod
 **On merge to main:** a GitHub Action consumes the changesets, bumps `package.json`, and updates `CHANGELOG.md` via an automatic "Version Packages" PR.
 
 ## Contributing
-
-[See CONTRIBUTING.md](./CONTRIBUTING.md)
