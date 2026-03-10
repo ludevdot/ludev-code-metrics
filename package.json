@@ -2,7 +2,7 @@
   "name": "ludev-code-metrics",
   "displayName": "Ludev Code Metrics",
   "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "publisher": "ludevdot",
   "license": "MIT",
   "repository": {
@@ -25,7 +25,7 @@
     "insights",
     "ai"
   ],
-  "icon": "media/logo.png",
+  "icon": "media/ludev-logo.png",
   "galleryBanner": {
     "color": "#1E1E1E",
     "theme": "dark"
