@@ -1,0 +1,57 @@
+name: Bug Report
+description: Something isn't working as expected
+labels: ["Bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Fill in as much detail as you can — it helps a lot.
+
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      placeholder: "e.g. 1.1.8"
+    validations:
+      required: true
+
+  - type: input
+    id: vscode_version
+    attributes:
+      label: VS Code version
+      placeholder: "e.g. 1.97.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. macOS 15.2, Windows 11, Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly. What did you do, what did you expect, what actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open VS Code
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or errors
+      description: Check **Output → Ludev Code Metrics** or the Developer Console (Help → Toggle Developer Tools).
+      render: shell

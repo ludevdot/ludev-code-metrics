@@ -1,0 +1,38 @@
+name: Feature Request
+description: Suggest an idea or improvement
+labels: ["Feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? Describe what you need and why — the more context, the better.
+
+        If you want to discuss it openly before filing a formal request, start a thread in [Discussions](../../discussions) first.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation or pain point you're trying to address.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like to see? How should it work?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Any workarounds or other approaches you've thought about?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, mockups, or anything else that helps explain the idea.

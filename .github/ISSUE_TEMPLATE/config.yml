@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Ideas → Discussions
+    url: https://github.com/ludevdot/ludev-code-metrics/discussions
+    about: Ask questions, share ideas, or start a conversation. Issues are for confirmed bugs and accepted feature requests.
