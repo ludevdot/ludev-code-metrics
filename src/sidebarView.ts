@@ -20,6 +20,7 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
   private view?: vscode.WebviewView;
   private lastData: UsageLimits | null = null;
+  private autoRefreshTimer: ReturnType<typeof setInterval> | undefined;
 
   /** Called after any successful data refresh so the status bar stays in sync. */
   public onRefresh?: () => void;
@@ -51,6 +52,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           this.post({ type: 'cacheResults', skills: cached, count: cached.length });
         }
         this.post({ type: 'installedSkills', ids: this.getInstalledSkillIds() });
+        const arConfig = vscode.workspace.getConfiguration('ludevMetrics');
+        const arEnabled = arConfig.get<boolean>('autoRefresh', false);
+        const arMinutes = arConfig.get<number>('autoRefreshInterval', 5);
+        this.post({ type: 'autoRefreshChanged', enabled: arEnabled, minutes: arMinutes });
+        this.updateAutoRefreshTimer(arEnabled, arMinutes);
       }
       if (msg.type === 'refresh') {
         void this.refresh();
@@ -119,6 +125,14 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
           }
         })();
       }
+      if (msg.type === 'toggleAutoRefresh') {
+        const config = vscode.workspace.getConfiguration('ludevMetrics');
+        const enabled = msg.enabled as boolean;
+        const minutes = msg.minutes as number;
+        void config.update('autoRefresh', enabled, vscode.ConfigurationTarget.Global);
+        void config.update('autoRefreshInterval', minutes, vscode.ConfigurationTarget.Global);
+        this.updateAutoRefreshTimer(enabled, minutes);
+      }
       if (msg.type === 'captureSession') {
         void this.runCaptureSessionFlow();
       }
@@ -143,6 +157,13 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         }
         if (e.affectsConfiguration('ludevMetrics.credentialsPath')) {
           void this.refresh();
+        }
+        if (e.affectsConfiguration('ludevMetrics.autoRefresh') || e.affectsConfiguration('ludevMetrics.autoRefreshInterval')) {
+          const arCfg = vscode.workspace.getConfiguration('ludevMetrics');
+          const arOn = arCfg.get<boolean>('autoRefresh', false);
+          const arMin = arCfg.get<number>('autoRefreshInterval', 5);
+          this.post({ type: 'autoRefreshChanged', enabled: arOn, minutes: arMin });
+          this.updateAutoRefreshTimer(arOn, arMin);
         }
       })
     );
@@ -225,7 +246,23 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     void vscode.window.showInformationMessage(vscode.l10n.t('Account "{0}" captured.', captured.email));
   }
 
-  dispose(): void {}
+  private updateAutoRefreshTimer(enabled: boolean, minutes: number): void {
+    if (this.autoRefreshTimer !== undefined) {
+      clearInterval(this.autoRefreshTimer);
+      this.autoRefreshTimer = undefined;
+    }
+    if (enabled && minutes >= 1) {
+      this.autoRefreshTimer = setInterval(() => {
+        void this.refresh();
+      }, minutes * 60 * 1000);
+    }
+  }
+
+  dispose(): void {
+    if (this.autoRefreshTimer !== undefined) {
+      clearInterval(this.autoRefreshTimer);
+    }
+  }
 
   private escapeHtml(str: string): string {
     return str
@@ -303,6 +340,11 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
       opusLabel:        vscode.l10n.t('Opus (7d)'),
       accountCapture:   vscode.l10n.t('Capture current CLI session'),
       refreshCooldown:  vscode.l10n.t('Please wait before refreshing again to avoid rate limits'),
+      autoRefreshLabel: vscode.l10n.t('Auto-refresh'),
+      autoRefreshEnable: vscode.l10n.t('Enable auto-refresh'),
+      autoRefreshEvery: vscode.l10n.t('Refresh every'),
+      autoRefreshMinutes: vscode.l10n.t('minutes'),
+      autoRefreshHint: vscode.l10n.t('Frequent auto-refresh may cause Claude to temporarily block usage requests. We recommend refreshing every 5 minutes, or manually via the refresh button or status bar click.'),
     };
 
     return /* html */`<!DOCTYPE html>
@@ -321,11 +363,27 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
 
   <div class="header">
     <div style="display:flex;align-items:center;gap:6px;">
-      <h2>${i18n.title}</h2>
+      <label class="auto-refresh-toggle" style="margin:0;">
+        <span class="toggle-switch">
+          <input type="checkbox" id="autoRefreshToggle">
+          <span class="toggle-track"></span>
+        </span>
+        <span class="auto-refresh-toggle-label">${i18n.autoRefreshLabel}</span>
+      </label>
       ${planLabel ? `<span class="plan-badge" id="planBadge">${planLabel}</span>` : '<span class="plan-badge" id="planBadge" style="display:none"></span>'}
     </div>
-    <button class="refresh-btn" id="refreshBtn">↻ ${i18n.refresh}</button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div id="autoRefreshInput" style="display:none;">
+        <div class="auto-refresh-interval" style="padding:0;">
+          <label>${i18n.autoRefreshEvery}</label>
+          <input type="number" id="autoRefreshMinutes" min="1" max="60" value="5">
+          <span>${i18n.autoRefreshMinutes}</span>
+        </div>
+      </div>
+      <button class="refresh-btn" id="refreshBtn">↻ ${i18n.refresh}</button>
+    </div>
   </div>
+  <div class="auto-refresh-hint" id="autoRefreshHint" style="display:none;">${i18n.autoRefreshHint}</div>
 
   <div class="account-row">
     <button class="account-add-btn" id="addAccountBtn" title="${i18n.accountCapture}">⊕ ${i18n.accountCapture}</button>
@@ -407,6 +465,46 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
   document.getElementById('addAccountBtn').addEventListener('click', function () {
     vscode.postMessage({ type: 'captureSession' });
   });
+
+  // ── Auto-refresh toggle ──
+  (function () {
+    var toggle = document.getElementById('autoRefreshToggle');
+    var inputWrap = document.getElementById('autoRefreshInput');
+    var minutesInput = document.getElementById('autoRefreshMinutes');
+    var refreshBtn = document.getElementById('refreshBtn');
+    var hint = document.getElementById('autoRefreshHint');
+
+    window._applyAutoRefreshState = function (enabled, minutes) {
+      toggle.checked = enabled;
+      minutesInput.value = String(minutes);
+      inputWrap.style.display = enabled ? '' : 'none';
+      refreshBtn.style.display = enabled ? 'none' : '';
+      hint.style.display = enabled ? '' : 'none';
+    };
+
+    toggle.addEventListener('change', function () {
+      var mins = parseInt(minutesInput.value, 10) || 5;
+      window._applyAutoRefreshState(toggle.checked, mins);
+      vscode.postMessage({
+        type: 'toggleAutoRefresh',
+        enabled: toggle.checked,
+        minutes: mins
+      });
+    });
+
+    minutesInput.addEventListener('change', function () {
+      var val = parseInt(minutesInput.value, 10);
+      if (val < 1) { val = 1; minutesInput.value = '1'; }
+      if (val > 60) { val = 60; minutesInput.value = '60'; }
+      if (toggle.checked) {
+        vscode.postMessage({
+          type: 'toggleAutoRefresh',
+          enabled: true,
+          minutes: val
+        });
+      }
+    });
+  })();
 
   ${getUsageTabScript()}
   ${getSkillsTabScript()}

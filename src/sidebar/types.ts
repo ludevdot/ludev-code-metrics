@@ -50,4 +50,9 @@ export interface SidebarI18n {
   opusLabel: string;
   accountCapture: string;
   refreshCooldown: string;
+  autoRefreshLabel: string;
+  autoRefreshEnable: string;
+  autoRefreshEvery: string;
+  autoRefreshMinutes: string;
+  autoRefreshHint: string;
 }

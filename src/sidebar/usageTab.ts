@@ -145,6 +145,80 @@ export function getUsageTabStyles(): string {
       margin-left: auto;
     }
 
+    /* ── Auto-refresh ── */
+    .auto-refresh-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 0;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 32px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 9px;
+      background: var(--vscode-widget-border, rgba(128,128,128,0.35));
+      transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--vscode-foreground);
+      opacity: 0.6;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-track {
+      background: var(--vscode-focusBorder, #007fd4);
+    }
+    .toggle-switch input:checked + .toggle-track::after {
+      transform: translateX(14px);
+      opacity: 1;
+    }
+    .auto-refresh-toggle-label { font-size: 12px; }
+    .auto-refresh-interval {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 0 4px 40px;
+    }
+    .auto-refresh-interval label { font-size: 11px; opacity: 0.7; white-space: nowrap; }
+    .auto-refresh-interval input[type="number"] {
+      width: 48px;
+      font-size: 11px;
+      font-family: var(--vscode-font-family);
+      color: var(--vscode-input-foreground, var(--vscode-foreground));
+      background: var(--vscode-input-background, var(--vscode-editor-background));
+      border: 1px solid var(--vscode-input-border, rgba(128,128,128,0.3));
+      border-radius: 3px;
+      padding: 2px 4px;
+      text-align: center;
+    }
+    .auto-refresh-interval input[type="number"]:focus {
+      outline: 1px solid var(--vscode-focusBorder, #007fd4);
+      outline-offset: -1px;
+    }
+    .auto-refresh-interval span { font-size: 11px; opacity: 0.7; }
+    .auto-refresh-hint {
+      font-size: 10px;
+      opacity: 0.5;
+      line-height: 1.45;
+      padding: 6px 0 0;
+      font-style: italic;
+    }
+
     /* ── Overview bar chart ── */
     .ov-row {
       display: flex;
@@ -472,6 +546,10 @@ export function getUsageTabScript(): string {
       document.getElementById('noAuth').classList.remove('hidden');
       document.getElementById('planBadge').style.display = 'none';
       document.getElementById('footer').textContent = '';
+    }
+
+    if (msg.type === 'autoRefreshChanged') {
+      window._applyAutoRefreshState(msg.enabled, msg.minutes);
     }
 
     if (msg.type === 'planUpdated') {

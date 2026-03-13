@@ -48,5 +48,10 @@
   "Compact": "Compact",
   "Overview only": "Vue d'ensemble uniquement",
   "Extended": "Étendu",
-  "Session & Weekly": "Session & Hebdomadaire"
+  "Session & Weekly": "Session & Hebdomadaire",
+  "Auto-refresh": "Actualisation automatique",
+  "Enable auto-refresh": "Activer l'actualisation automatique",
+  "Refresh every": "Actualiser toutes les",
+  "minutes": "minutes",
+  "Frequent auto-refresh may cause Claude to temporarily block usage requests. We recommend refreshing every 5 minutes, or manually via the refresh button or status bar click.": "Une actualisation automatique trop fréquente peut amener Claude à bloquer temporairement les requêtes d'utilisation. Nous recommandons d'actualiser toutes les 5 minutes, ou manuellement via le bouton d'actualisation ou la barre d'état."
 }

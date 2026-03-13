@@ -43,8 +43,9 @@ A VS Code extension that shows your [Claude Code](https://claude.ai/code) subscr
 11. **Multilingual UI** — automatically follows VS Code's display language (English, Spanish, Italian, French).
 12. **Stale indicator** — shows `~` when the last fetch failed but cached data is available.
 13. **Cross-platform credentials** — reads automatically from `~/.claude/.credentials.json` (written by Claude Code CLI). No manual token setup required in most cases.
-14. **Click to refresh** — clicking either status bar item triggers an immediate update.
-15. **Enter token manually** — Command Palette command and sidebar button to paste a raw OAuth token when automatic resolution fails.
+14. **Auto-refresh** — optional periodic background refresh with configurable interval (1–60 minutes); disabled by default to avoid rate limits.
+15. **Click to refresh** — clicking either status bar item triggers an immediate update.
+16. **Enter token manually** — Command Palette command and sidebar button to paste a raw OAuth token when automatic resolution fails.
 16. **Set credentials path** — Command Palette command and sidebar button to point to a custom credentials JSON file; unlocks the plan badge in addition to usage data.
 17. **Startup notification** — if no credentials are found at launch, a notification appears with an option to set credentials immediately or skip.
 18. **Activity Bar badge** — the sidebar icon shows a `1` badge while no credentials are configured, disappearing once a valid token is found.
@@ -95,13 +96,14 @@ The panel shows:
 - **Reset countdown** — "2h left", "3d left", etc.
 - **Subscription plan badge** — your plan (Free, Pro, Max 5×…) shown in the header when credentials are loaded from the local store (Keychain or `~/.claude/.credentials.json`). Hidden in the no-auth state, and not shown when using a manual token (see note below).
 - **Stale badge** — appears if the last API call failed and cached data is shown.
-- **Refresh button** — triggers an immediate API call (30-second cooldown to avoid rate limits).
+- **Refresh button** — visible when auto-refresh is disabled; triggers an immediate API call (30-second cooldown to avoid rate limits).
 - **Enter token manually button** — shown in the no-auth state; opens an input box to paste a raw token. Usage data loads but the plan badge will not appear.
 - **Set credentials path button** — shown alongside the token button; opens a native file picker to select the Claude Code credentials JSON. Provides full credentials including the plan badge.
 - **Activity Bar badge (`1`)** — visible on the sidebar icon whenever no credentials are configured.
 - **Overview card** — compact linear progress bars for Session (5h), Weekly (7d), and Opus (7d) all in one row. Visible in *Compact* mode. The Opus row is hidden if the API returns no Opus data.
 - **View mode toggle** — *Extended* (default) shows the Session and Weekly detail cards; *Compact* shows the Overview card only. Switching saves the preference to VS Code settings.
 - **Style picker** — four radio buttons to switch the Status Bar display style live.
+- **Auto-refresh toggle** — located in the header alongside the plan badge. When enabled, hides the refresh button and shows a minutes input (default 5) and a rate-limit warning. Disabled by default.
 - **Last updated** timestamp at the bottom.
 
 ## Skills Browser
@@ -125,7 +127,8 @@ Open Settings (`Cmd/Ctrl + ,`) and search for `ludevMetrics`.
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `ludevMetrics.barStyle` | string | `"gradient"` | Status bar display style: `gradient`, `blocks`, `icon-only`, `icon+gradient` |
-| `ludevMetrics.refreshInterval` | number | `60` | Poll interval in seconds (minimum 30) |
+| `ludevMetrics.autoRefresh` | boolean | `false` | Enable automatic periodic refresh of usage data |
+| `ludevMetrics.autoRefreshInterval` | number | `5` | Auto-refresh interval in minutes (1–60) |
 | `ludevMetrics.warningThreshold` | number | `80` | Usage % at which the warning colour activates |
 | `ludevMetrics.credentialsPath` | string | `""` | Path to a custom credentials JSON file (full credentials, includes plan type) |
 | `ludevMetrics.viewMode` | string | `"extended"` | Sidebar view mode: `extended` (Session + Weekly cards) or `compact` (Overview only) |
