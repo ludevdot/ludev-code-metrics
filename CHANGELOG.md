@@ -4,6 +4,27 @@ All notable changes to the **Ludev Code Metrics** extension will be documented i
 
 Follow [Keep a Changelog](http://keepachangelog.com/) conventions.
 
+## [1.1.12] - 2026-03-13
+
+### Added
+- **Auto-refresh toggle** in the sidebar header — enable periodic background refresh with a configurable interval (1–60 minutes, default 5).
+- When auto-refresh is enabled, the manual refresh button is hidden and a rate-limit warning hint is shown below the header.
+- New settings: `ludevMetrics.autoRefresh` (boolean, default `false`) and `ludevMetrics.autoRefreshInterval` (number, default `5` minutes).
+
+### Changed
+- Sidebar header no longer shows the "Ludev Code Metrics" title — replaced by the auto-refresh toggle and plan badge.
+
+## [1.1.11] - 2026-03-10
+
+### Fixed
+- Corrected repo name in `.changeset/config.json` (was `ludev/claude-usage-indicator`).
+
+## [1.1.10] - 2026-03-10
+
+### Added
+- Extension marketplace icon updated to `media/ludev-logo.png`.
+- CHANGELOG fully rewritten to cover all releases since the rename to Ludev Code Metrics.
+
 ## [1.1.9] - 2026-03-10
 
 ### Added
