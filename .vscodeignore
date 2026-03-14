@@ -22,7 +22,7 @@ docs/**
 # Docs (keep README, CHANGELOG, LICENSE — Marketplace shows them)
 CONTRIBUTING.md
 CLAUDE.md
-claude-usage-vscode-extension.md
+.docs/**
 PLAN.md
 .changeset/**
 scripts/**
