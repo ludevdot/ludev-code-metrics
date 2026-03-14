@@ -167,23 +167,42 @@ describe('UsageSidebarProvider', () => {
   // ── ready message ──────────────────────────────────────────────────────────
 
   describe('message: ready', () => {
-    it('triggers a refresh when ready is received', async () => {
-      vi.mocked(credentials.getAccessTokenForAccount).mockReturnValue('tok');
-      vi.mocked(usageApi.fetchUsage).mockResolvedValue({
-        five_hour: { utilization: 10, resets_at: null },
-        seven_day: { utilization: 20, resets_at: null },
-        seven_day_opus: { utilization: 0, resets_at: null },
-      });
-
+    it('posts noAuth when ready is received and there is no cached data', async () => {
       const { view, emit, postMessage } = makeWebviewView();
       provider.resolveWebviewView(view, {} as import('vscode').WebviewViewResolveContext, {} as import('vscode').CancellationToken);
       emit({ type: 'ready' });
 
-      // Let async work settle
       await new Promise(r => setTimeout(r, 0));
 
-      const types = postedTypes(postMessage);
-      expect(types).toContain('update');
+      expect(postedTypes(postMessage)).toContain('noAuth');
+      expect(usageApi.fetchUsage).not.toHaveBeenCalled();
+    });
+
+    it('posts stale update when ready is received and there is cached data', async () => {
+      const usageData = {
+        five_hour: { utilization: 10, resets_at: null },
+        seven_day: { utilization: 20, resets_at: null },
+        seven_day_opus: { utilization: 0, resets_at: null },
+      };
+      vi.mocked(credentials.getAccessTokenForAccount).mockReturnValue('tok');
+      vi.mocked(usageApi.fetchUsage).mockResolvedValue(usageData);
+
+      const { view, emit, postMessage } = makeWebviewView();
+      provider.resolveWebviewView(view, {} as import('vscode').WebviewViewResolveContext, {} as import('vscode').CancellationToken);
+
+      // Populate lastData via an explicit refresh
+      await provider.refresh();
+      postMessage.mockClear();
+
+      // Now simulate reopening the panel
+      emit({ type: 'ready' });
+      await new Promise(r => setTimeout(r, 0));
+
+      const updateCall = findPosted(postMessage, 'update');
+      expect(updateCall).toBeDefined();
+      expect(updateCall).toMatchObject({ type: 'update', stale: true });
+      // No additional fetch should have been made
+      expect(usageApi.fetchUsage).toHaveBeenCalledTimes(1);
     });
   });
 

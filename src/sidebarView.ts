@@ -45,8 +45,9 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
         if (this.lastData) {
           const history = getHistory(this.context);
           this.post({ type: 'update', data: this.lastData, stale: true, history });
+        } else {
+          this.post({ type: 'noAuth' });
         }
-        void this.refresh();
         const cached = loadCache(this.context);
         if (cached) {
           this.post({ type: 'cacheResults', skills: cached, count: cached.length });
