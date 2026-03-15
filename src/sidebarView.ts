@@ -196,6 +196,15 @@ export class UsageSidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /** Update sidebar display with data fetched externally (e.g. from status bar). Does not trigger onRefresh. */
+  updateData(data: UsageLimits): void {
+    this.lastData = data;
+    if (this.view?.visible) {
+      const history = getHistory(this.context);
+      this.post({ type: 'update', data, stale: false, history });
+    }
+  }
+
   private post(msg: unknown): void {
     if (this.view?.visible) {
       void this.view.webview.postMessage(msg);

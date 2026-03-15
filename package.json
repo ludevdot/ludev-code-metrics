@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/ludevdot/ludev-code-metrics/issues"
   },
-  "homepage": "",
+  "homepage": "https://code.ludev.me",
   "keywords": [
     "claude",
     "anthropic",
@@ -48,6 +48,7 @@
     "vscode": "^1.85.0"
   },
   "categories": [
+    "AI",
     "Other"
   ],
   "activationEvents": [

@@ -16,6 +16,7 @@ export function activate(context: vscode.ExtensionContext): void {
     statusBar?.clearCache();
     void statusBar?.refresh();
   };
+  statusBar.onRefresh = (data) => { sidebarProvider?.updateData(data); };
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       UsageSidebarProvider.viewType,

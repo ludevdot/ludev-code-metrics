@@ -15,6 +15,9 @@ export class UsageStatusBar {
   private sessionNotified = false;
   private weeklyNotified = false;
 
+  /** Called after a successful refresh so the sidebar can sync. */
+  public onRefresh?: (data: UsageLimits) => void;
+
   constructor(private readonly context: vscode.ExtensionContext) {
     this.sessionItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
@@ -95,6 +98,7 @@ export class UsageStatusBar {
       this.lastValidData = data;
       this.weeklyItem.show();
       this.updateDisplay(data, false, accountLabel);
+      this.onRefresh?.(data);
     } catch {
       if (this.lastValidData) {
         this.updateDisplay(this.lastValidData, true, accountLabel);
