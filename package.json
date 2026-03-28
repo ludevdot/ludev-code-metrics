@@ -2,7 +2,7 @@
   "name": "ludev-code-metrics",
   "displayName": "Ludev Code Metrics",
   "description": "Shows Claude Code subscription usage (session and weekly) in the Status Bar",
-  "version": "1.1.15",
+  "version": "1.2.0",
   "publisher": "ludevdot",
   "license": "MIT",
   "repository": {
@@ -113,23 +113,6 @@
           "default": "",
           "description": "%config.manualToken.description%"
         },
-        "ludevMetrics.barStyle": {
-          "type": "string",
-          "enum": [
-            "gradient",
-            "blocks",
-            "icon-only",
-            "icon+gradient"
-          ],
-          "enumDescriptions": [
-            "%config.barStyle.gradient%",
-            "%config.barStyle.blocks%",
-            "%config.barStyle.iconOnly%",
-            "%config.barStyle.iconGradient%"
-          ],
-          "default": "gradient",
-          "description": "%config.barStyle.description%"
-        },
         "ludevMetrics.credentialsPath": {
           "type": "string",
           "default": "",
@@ -142,14 +125,33 @@
           "maximum": 100,
           "description": "%config.warningThreshold.description%"
         },
-        "ludevMetrics.viewMode": {
-          "type": "string",
-          "enum": [
-            "extended",
-            "compact"
-          ],
-          "default": "extended",
-          "description": "%config.viewMode.description%"
+        "ludevMetrics.costRates": {
+          "type": "object",
+          "default": {
+            "inputPerMtok": 3,
+            "outputPerMtok": 15,
+            "cacheReadPerMtok": 0.3,
+            "cacheCreationPerMtok": 3.75
+          },
+          "description": "%config.costRates.description%",
+          "properties": {
+            "inputPerMtok": {
+              "type": "number",
+              "description": "Cost per million input tokens (USD)"
+            },
+            "outputPerMtok": {
+              "type": "number",
+              "description": "Cost per million output tokens (USD)"
+            },
+            "cacheReadPerMtok": {
+              "type": "number",
+              "description": "Cost per million cache-read tokens (USD)"
+            },
+            "cacheCreationPerMtok": {
+              "type": "number",
+              "description": "Cost per million cache-creation tokens (USD)"
+            }
+          }
         },
         "ludevMetrics.accounts": {
           "type": "array",

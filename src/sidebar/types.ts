@@ -17,16 +17,6 @@ export interface SidebarI18n {
   setCredPathBtn: string;
   credPathDesc: string;
   selectCredFile: string;
-  styleLabel: string;
-  gradient: string;
-  blocks: string;
-  iconOnly: string;
-  iconGradient: string;
-  viewModeLabel: string;
-  compact: string;
-  compactDesc: string;
-  extended: string;
-  extendedDesc: string;
   updated: string;
   dLeft: string;
   hLeft: string;
@@ -55,4 +45,56 @@ export interface SidebarI18n {
   autoRefreshEvery: string;
   autoRefreshMinutes: string;
   autoRefreshHint: string;
+  // Context tab
+  ctxLabel: string;
+  ctxNoSession: string;
+  ctxSessionLabel: string;
+  ctxTokenBreakdown: string;
+  ctxInput: string;
+  ctxOutput: string;
+  ctxCacheRead: string;
+  ctxCacheWrite: string;
+  ctxSummary: string;
+  ctxCostLabel: string;
+  ctxResponses: string;
+  ctxDuration: string;
+  ctxTotalTokens: string;
+  ctxModels: string;
+}
+
+/** Information about an active Claude Code session. */
+export interface SessionInfo {
+  pid: number;
+  sessionId: string;
+  projectPath: string;
+  transcriptPath: string;
+  startedAt: Date;
+}
+
+/** Aggregated token metrics from a parsed transcript. */
+export interface TranscriptMetrics {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  responseCount: number;
+  firstResponseAt: Date | null;
+  lastResponseAt: Date | null;
+}
+
+/** Breakdown of estimated cost by token category. */
+export interface CostBreakdown {
+  inputCost: number;
+  outputCost: number;
+  cacheReadCost: number;
+  cacheCreationCost: number;
+  totalCost: number;
+}
+
+/** Per-million-token pricing rates. */
+export interface CostRates {
+  inputPerMtok: number;
+  outputPerMtok: number;
+  cacheReadPerMtok: number;
+  cacheCreationPerMtok: number;
 }

@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
 
-export type BarStyle = 'gradient' | 'blocks' | 'icon-only' | 'icon+gradient';
-
 /**
  * Formats the time remaining until a reset timestamp.
  * Returns an empty string if resetsAt is null or in the past.
@@ -28,53 +26,6 @@ export function formatTimeLeft(resetsAt: string | null): string {
     return vscode.l10n.t('{0}h left', diffHours);
   }
   return vscode.l10n.t('{0}m left', diffMinutes);
-}
-
-/**
- * Builds a progress bar of the given length.
- * gradient: ▰▰▰▰▰▱▱▱▱▱
- * blocks:   █████░░░░░
- */
-export function buildProgressBar(
-  percent: number,
-  length = 10,
-  style: 'gradient' | 'blocks' = 'gradient'
-): string {
-  const filled = Math.max(0, Math.min(length, Math.round((percent / 100) * length)));
-  if (style === 'blocks') {
-    return '█'.repeat(filled) + '░'.repeat(length - filled);
-  }
-  return '▰'.repeat(filled) + '▱'.repeat(length - filled);
-}
-
-/**
- * Returns a dynamic codicon based on usage level.
- * $(pass) → $(warning) → $(error) as utilization rises.
- */
-export function getDynamicIcon(percent: number, warningThreshold: number): string {
-  if (percent >= 95) {
-    return '$(error)';
-  }
-  if (percent >= warningThreshold) {
-    return '$(warning)';
-  }
-  return '$(pass)';
-}
-
-/**
- * Returns a foreground ThemeColor for the status bar text (progress bar blocks).
- * Only returns a color in the "normal" range so it doesn't clash with backgroundColor.
- * - < warningThreshold: charts.green (blocks look green)
- * - else: undefined (backgroundColor already provides visual feedback)
- */
-export function getTextColorByUsage(
-  percent: number,
-  warningThreshold: number
-): vscode.ThemeColor | undefined {
-  if (percent >= warningThreshold) {
-    return undefined;
-  }
-  return new vscode.ThemeColor('charts.green');
 }
 
 /**

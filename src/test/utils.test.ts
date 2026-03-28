@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   formatTimeLeft,
-  buildProgressBar,
-  getDynamicIcon,
   getColorByUsage,
 } from '../utils';
 import { ThemeColor } from './__mocks__/vscode';
@@ -39,65 +37,6 @@ describe('formatTimeLeft', () => {
 
   it('returns 1m left for exactly 1 minute remaining', () => {
     expect(formatTimeLeft('2026-03-03T12:01:00Z')).toBe('1m left');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// buildProgressBar
-// ---------------------------------------------------------------------------
-
-describe('buildProgressBar', () => {
-  it('returns all empty chars at 0%', () => {
-    expect(buildProgressBar(0, 10, 'gradient')).toBe('▱▱▱▱▱▱▱▱▱▱');
-    expect(buildProgressBar(0, 10, 'blocks')).toBe('░░░░░░░░░░');
-  });
-
-  it('returns all filled chars at 100%', () => {
-    expect(buildProgressBar(100, 10, 'gradient')).toBe('▰▰▰▰▰▰▰▰▰▰');
-    expect(buildProgressBar(100, 10, 'blocks')).toBe('██████████');
-  });
-
-  it('returns half filled at 50%', () => {
-    expect(buildProgressBar(50, 10, 'gradient')).toBe('▰▰▰▰▰▱▱▱▱▱');
-    expect(buildProgressBar(50, 10, 'blocks')).toBe('█████░░░░░');
-  });
-
-  it('clamps negative percentages to 0', () => {
-    expect(buildProgressBar(-10, 10, 'gradient')).toBe('▱▱▱▱▱▱▱▱▱▱');
-  });
-
-  it('clamps percentages above 100 to full bar', () => {
-    expect(buildProgressBar(150, 10, 'gradient')).toBe('▰▰▰▰▰▰▰▰▰▰');
-  });
-
-  it('respects custom length', () => {
-    expect(buildProgressBar(50, 4, 'gradient')).toBe('▰▰▱▱');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getDynamicIcon
-// ---------------------------------------------------------------------------
-
-describe('getDynamicIcon', () => {
-  it('returns $(pass) below warning threshold', () => {
-    expect(getDynamicIcon(0, 80)).toBe('$(pass)');
-    expect(getDynamicIcon(79, 80)).toBe('$(pass)');
-  });
-
-  it('returns $(warning) at or above warning threshold', () => {
-    expect(getDynamicIcon(80, 80)).toBe('$(warning)');
-    expect(getDynamicIcon(94, 80)).toBe('$(warning)');
-  });
-
-  it('returns $(error) at or above 95%', () => {
-    expect(getDynamicIcon(95, 80)).toBe('$(error)');
-    expect(getDynamicIcon(100, 80)).toBe('$(error)');
-  });
-
-  it('respects custom warning threshold', () => {
-    expect(getDynamicIcon(60, 50)).toBe('$(warning)');
-    expect(getDynamicIcon(49, 50)).toBe('$(pass)');
   });
 });
 

@@ -4,11 +4,12 @@ import {
   DEFAULT_ACCOUNT_LABEL,
 } from './credentials';
 import { fetchUsage, UsageLimits } from './usageApi';
-import { BarStyle, buildProgressBar, formatTimeLeft, getColorByUsage, getTextColorByUsage, getDynamicIcon } from './utils';
+import { formatTimeLeft, getColorByUsage } from './utils';
 
 export class UsageStatusBar {
   private readonly sessionItem: vscode.StatusBarItem;
   private readonly weeklyItem: vscode.StatusBarItem;
+  private readonly contextItem: vscode.StatusBarItem;
   private pollingInterval: ReturnType<typeof setInterval> | undefined;
   private lastValidData: UsageLimits | null = null;
   private readonly disposables: vscode.Disposable[] = [];
@@ -30,6 +31,12 @@ export class UsageStatusBar {
       99
     );
     this.weeklyItem.command = 'ludevMetrics.refresh';
+
+    this.contextItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      98
+    );
+    this.contextItem.command = 'ludevMetrics.sidebar.focus';
 
     this.sessionItem.show();
     this.weeklyItem.show();
@@ -143,9 +150,9 @@ export class UsageStatusBar {
   }
 
   private updateDisplay(data: UsageLimits, stale: boolean, accountLabel: string | null): void {
-    const config = vscode.workspace.getConfiguration('ludevMetrics');
-    const barStyle = config.get<BarStyle>('barStyle', 'gradient');
-    const warningThreshold = config.get<number>('warningThreshold', 80);
+    const warningThreshold = vscode.workspace
+      .getConfiguration('ludevMetrics')
+      .get<number>('warningThreshold', 80);
     const staleMark = stale ? ' ~' : '';
 
     // Session item
@@ -153,10 +160,9 @@ export class UsageStatusBar {
     const sessionTime = formatTimeLeft(data.five_hour.resets_at);
     const sessionTimeStr = sessionTime ? ` · ${sessionTime}` : '';
     this.sessionItem.text = this.formatText(
-      '$(clock)', sessionPct, vscode.l10n.t('Session'), sessionTimeStr, staleMark, barStyle, warningThreshold, accountLabel
+      '$(clock)', sessionPct, vscode.l10n.t('Session'), sessionTimeStr, staleMark, warningThreshold, accountLabel
     );
     this.sessionItem.backgroundColor = getColorByUsage(sessionPct, warningThreshold);
-    this.sessionItem.color = getTextColorByUsage(sessionPct, warningThreshold);
     this.sessionItem.tooltip = this.buildTooltip(
       vscode.l10n.t('Session Usage (5h rolling window)'),
       sessionPct,
@@ -169,10 +175,9 @@ export class UsageStatusBar {
     const weeklyTime = formatTimeLeft(data.seven_day.resets_at);
     const weeklyTimeStr = weeklyTime ? ` · ${weeklyTime}` : '';
     this.weeklyItem.text = this.formatText(
-      '$(calendar)', weeklyPct, vscode.l10n.t('Weekly'), weeklyTimeStr, staleMark, barStyle, warningThreshold, accountLabel
+      '$(calendar)', weeklyPct, vscode.l10n.t('Weekly'), weeklyTimeStr, staleMark, warningThreshold, accountLabel
     );
     this.weeklyItem.backgroundColor = getColorByUsage(weeklyPct, warningThreshold);
-    this.weeklyItem.color = getTextColorByUsage(weeklyPct, warningThreshold);
     this.weeklyItem.tooltip = this.buildTooltip(
       vscode.l10n.t('Weekly Usage (7-day rolling window)'),
       weeklyPct,
@@ -184,30 +189,19 @@ export class UsageStatusBar {
   }
 
   private formatText(
-    staticIcon: string,
+    _icon: string,
     pct: number,
     label: string,
     timeStr: string,
     staleMark: string,
-    barStyle: BarStyle,
     warningThreshold: number,
     accountLabel: string | null
   ): string {
-    const gradientBar = ` ${buildProgressBar(pct, 10, 'gradient')}`;
-    const blocksBar   = ` ${buildProgressBar(pct, 10, 'blocks')}`;
-    const dynIcon     = getDynamicIcon(pct, warningThreshold);
-    const prefix      = accountLabel ? `[${accountLabel.slice(0, 10)}] ` : '';
-
-    switch (barStyle) {
-      case 'gradient':
-        return `${prefix}${staticIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
-      case 'blocks':
-        return `${prefix}${staticIcon}${blocksBar} ${label}: ${pct}%${timeStr}${staleMark}`;
-      case 'icon-only':
-        return `${prefix}${dynIcon} ${label}: ${pct}%${timeStr}${staleMark}`;
-      case 'icon+gradient':
-        return `${prefix}${dynIcon}${gradientBar} ${label}: ${pct}%${timeStr}${staleMark}`;
-    }
+    const dynIcon = pct >= 95 ? '$(error)' : pct >= warningThreshold ? '$(warning)' : '$(pass)';
+    const filled = Math.max(0, Math.min(10, Math.round((pct / 100) * 10)));
+    const bar = '▰'.repeat(filled) + '▱'.repeat(10 - filled);
+    const prefix = accountLabel ? `[${accountLabel.slice(0, 10)}] ` : '';
+    return `${prefix}${dynIcon} ${bar} ${label}: ${pct}%${timeStr}${staleMark}`;
   }
 
   private buildTooltip(
@@ -237,6 +231,27 @@ export class UsageStatusBar {
     this.weeklyItem.hide();
   }
 
+  /**
+   * Updates the context status bar item with session cost and total tokens.
+   * Called from the sidebar provider when transcript data is parsed.
+   */
+  updateContextDisplay(totalCost: number, totalTokens: number): void {
+    const formatTokens = (n: number): string => {
+      if (n >= 1_000_000) { return (n / 1_000_000).toFixed(1) + 'M'; }
+      if (n >= 1_000) { return (n / 1_000).toFixed(1) + 'k'; }
+      return String(n);
+    };
+
+    this.contextItem.text = `$(zap) $${totalCost.toFixed(2)} · ${formatTokens(totalTokens)} tok`;
+    this.contextItem.tooltip = vscode.l10n.t('Claude Code session cost and tokens');
+    this.contextItem.show();
+  }
+
+  /** Hides the context status bar item (e.g. when no session is active). */
+  hideContextDisplay(): void {
+    this.contextItem.hide();
+  }
+
   private restartPolling(): void {
     void this.refresh();
   }
@@ -247,6 +262,7 @@ export class UsageStatusBar {
     }
     this.sessionItem.dispose();
     this.weeklyItem.dispose();
+    this.contextItem.dispose();
     for (const d of this.disposables) {
       d.dispose();
     }

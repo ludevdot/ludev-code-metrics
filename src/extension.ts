@@ -11,6 +11,7 @@ export function activate(context: vscode.ExtensionContext): void {
   void statusBar.start();
 
   sidebarProvider = new UsageSidebarProvider(context);
+  sidebarProvider.statusBar = statusBar;
   sidebarProvider.onRefresh = () => { void statusBar?.refresh(); };
   sidebarProvider.onAccountChange = () => {
     statusBar?.clearCache();

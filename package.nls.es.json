@@ -10,11 +10,7 @@
   "config.autoRefresh.description": "Activar refresco automático periódico de los datos de uso (desactivado por defecto)",
   "config.autoRefreshInterval.description": "Intervalo de refresco automático en minutos (1–60, por defecto 5)",
   "config.manualToken.description": "Token OAuth manual de reserva si la resolución automática de credenciales falla",
-  "config.barStyle.description": "Estilo visual de los elementos de la barra de estado",
-  "config.barStyle.gradient": "Barra degradada con caracteres ▰▱  — $(clock) ▰▰▰▰▰▱▱▱▱▱ Sesión: 45% · 2h restantes",
-  "config.barStyle.blocks": "Barra sólida con caracteres █░     — $(clock) █████░░░░░ Sesión: 45% · 2h restantes",
-  "config.barStyle.iconOnly": "Solo icono dinámico, sin barra     — $(pass/warning/error) Sesión: 45% · 2h restantes",
-  "config.barStyle.iconGradient": "Icono dinámico con barra degradada — $(pass) ▰▰▰▰▰▱▱▱▱▱ Sesión: 45% · 2h restantes",
+  "config.costRates.description": "Tarifas por millón de tokens (USD) para estimar el coste del contexto. Los valores por defecto corresponden al precio de Claude Sonnet 4.",
   "config.warningThreshold.description": "Porcentaje de uso a partir del cual se activa el color de advertencia",
   "config.viewMode.description": "Modo de vista del panel: 'extended' muestra las tarjetas Sesión y Semanal, 'compact' muestra solo el resumen",
   "config.accounts.description": "Cuentas con nombre para soporte multi-cuenta. Cada entrada requiere una etiqueta y token o credentialsPath. La etiqueta '__default__' está reservada para la detección automática."

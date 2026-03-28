@@ -302,42 +302,6 @@ describe('UsageSidebarProvider', () => {
     });
   });
 
-  // ── message: changeStyle ───────────────────────────────────────────────────
-
-  describe('message: changeStyle', () => {
-    it('updates barStyle configuration', () => {
-      const updateFn = vi.fn().mockResolvedValue(undefined);
-      workspace.getConfiguration = vi.fn().mockReturnValue({
-        get: vi.fn().mockReturnValue('gradient'),
-        update: updateFn,
-      });
-
-      const { view, emit } = makeWebviewView();
-      provider.resolveWebviewView(view, {} as import('vscode').WebviewViewResolveContext, {} as import('vscode').CancellationToken);
-      emit({ type: 'changeStyle', value: 'blocks' });
-
-      expect(updateFn).toHaveBeenCalledWith('barStyle', 'blocks', 1 /* ConfigurationTarget.Global */);
-    });
-  });
-
-  // ── message: changeViewMode ────────────────────────────────────────────────
-
-  describe('message: changeViewMode', () => {
-    it('updates viewMode configuration', () => {
-      const updateFn = vi.fn().mockResolvedValue(undefined);
-      workspace.getConfiguration = vi.fn().mockReturnValue({
-        get: vi.fn().mockReturnValue('extended'),
-        update: updateFn,
-      });
-
-      const { view, emit } = makeWebviewView();
-      provider.resolveWebviewView(view, {} as import('vscode').WebviewViewResolveContext, {} as import('vscode').CancellationToken);
-      emit({ type: 'changeViewMode', value: 'compact' });
-
-      expect(updateFn).toHaveBeenCalledWith('viewMode', 'compact', 1 /* ConfigurationTarget.Global */);
-    });
-  });
-
   // ── message: setToken ──────────────────────────────────────────────────────
 
   describe('message: setToken', () => {
