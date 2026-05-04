@@ -201,7 +201,7 @@
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "2.31.0",
     "@types/node": "24.12.2",
-    "@types/vscode": "1.116.0",
+    "@types/vscode": "1.118.0",
     "@vscode/vsce": "3.9.1",
     "esbuild": "0.28.0",
     "simple-git-hooks": "2.13.1",
