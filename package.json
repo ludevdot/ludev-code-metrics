@@ -202,7 +202,7 @@
     "@changesets/cli": "2.31.0",
     "@types/node": "24.12.2",
     "@types/vscode": "1.118.0",
-    "@vscode/vsce": "3.9.1",
+    "@vscode/vsce": "4.0.0",
     "esbuild": "0.28.0",
     "simple-git-hooks": "2.13.1",
     "typescript": "6.0.3",
